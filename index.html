@@ -1,0 +1,1500 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SDS Vault - Lab_Sonde</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#ff5f7a;--red-dark:#e44e68;
+  --cyan:#4dd8e8;--cyan-dim:rgba(77,216,232,.14);--cyan-glow:rgba(77,216,232,.28);
+  --bg-page:#0a0a0f;--bg-card:#13131a;--bg-card-2:#1c1c26;--bg-header:#0f1016;
+  --text-primary:#f0f0f5;--text-secondary:#c1c1d0;--text-muted:#78788f;
+  --border:#2a2d3b;--border-light:#1a1d27;
+  --active-green:#4ddc9a;--inactive-gray:#7a7a8d;
+  --flammable-red:#ff7a5c;--nonflammable-green:#4ddc9a;
+  --oil-bg:rgba(77,216,232,.12);--oil-fg:#4dd8e8;
+  --solder-bg:rgba(77,220,154,.12);--solder-fg:#4ddc9a;
+  --stats-bg:#101119;
+  --shadow:0 12px 32px rgba(0,0,0,.28);
+  --radius:16px;--radius-sm:10px;
+}
+[data-theme="dark"]{
+  --bg-page:#0a0a0f;--bg-card:#13131a;--bg-card-2:#1c1c26;--bg-header:#0f1016;
+  --text-primary:#f0f0f5;--text-secondary:#c1c1d0;--text-muted:#78788f;
+  --border:#2a2d3b;--border-light:#1a1d27;
+  --stats-bg:#101119;
+  --oil-bg:rgba(77,216,232,.12);--solder-bg:rgba(77,220,154,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Sarabun',sans-serif;font-size:var(--app-fontsize,14px);background:radial-gradient(circle at top right, rgba(77,216,232,.08), transparent 28%), var(--bg-page);color:var(--text-primary);min-height:100vh;display:flex;}
+
+/* ── SIDEBAR ─────────────────────────────────────────────── */
+:root{--sidebar-w:220px;}
+.sidebar{width:var(--sidebar-w);min-height:100vh;background:var(--bg-card);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:200;transition:width .2s;}
+.sidebar.collapsed{width:56px;}
+.sidebar-brand{height:68px;display:flex;align-items:center;gap:10px;padding:0 18px;border-bottom:1px solid var(--border);flex-shrink:0;overflow:hidden;}
+.sidebar-brand-icon{width:34px;height:34px;border-radius:10px;background:var(--cyan-dim);border:1px solid var(--cyan-glow);display:flex;align-items:center;justify-content:center;color:var(--cyan);font-weight:800;font-size:12px;letter-spacing:.04em;flex-shrink:0;font-family:'Sarabun',sans-serif;}
+.sidebar-brand-text{color:var(--text-primary);font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;}
+.sidebar-toggle{margin-left:auto;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:4px;flex-shrink:0;line-height:1;}
+.sidebar-toggle:hover{color:var(--cyan);}
+
+.sidebar-section{padding:10px 0 4px;}
+.sidebar-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--text-muted);padding:0 16px 4px;white-space:nowrap;overflow:hidden;}
+.sidebar.collapsed .sidebar-section-label{opacity:0;}
+
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:0 8px;cursor:pointer;color:var(--text-muted);font-size:13px;font-weight:500;border:1px solid transparent;border-radius:var(--radius-sm);transition:all .15s;white-space:nowrap;overflow:hidden;text-decoration:none;position:relative;}
+.nav-item:hover{background:var(--bg-card-2);color:var(--text-primary);border-color:var(--border);}
+.nav-item.active{background:var(--cyan-dim);color:var(--cyan);border-color:var(--cyan-glow);}
+.nav-item svg,.nav-icon{width:18px;height:18px;flex-shrink:0;opacity:.8;}
+.nav-item.active svg,.nav-item.active .nav-icon{opacity:1;}
+.nav-item-text{overflow:hidden;white-space:nowrap;}
+.sidebar.collapsed .nav-item-text{display:none;}
+.sidebar.collapsed .nav-item{justify-content:center;padding:10px;border-radius:var(--radius-sm);}
+.sidebar.collapsed .nav-item.active{background:var(--cyan-dim);}
+
+/* tooltip when collapsed */
+.sidebar.collapsed .nav-item::after{content:attr(data-tip);position:absolute;left:56px;background:var(--bg-card-2);color:var(--text-primary);font-size:12px;padding:4px 10px;border-radius:8px;border:1px solid var(--border);white-space:nowrap;pointer-events:none;opacity:0;transform:translateX(-4px);transition:opacity .15s,transform .15s;z-index:300;}
+.sidebar.collapsed .nav-item:hover::after{opacity:1;transform:translateX(0);}
+
+.nav-sub{padding-left:44px;overflow:hidden;max-height:0;transition:max-height .2s;}
+.nav-sub.open{max-height:200px;}
+.nav-sub .nav-item{padding:6px 12px;font-size:12px;}
+.sidebar.collapsed .nav-sub{display:none;}
+
+.nav-chevron{margin-left:auto;font-size:10px;transition:transform .2s;flex-shrink:0;}
+.nav-chevron.open{transform:rotate(90deg);}
+.sidebar.collapsed .nav-chevron{display:none;}
+
+.sidebar-footer{margin-top:auto;padding:12px;border-top:1px solid var(--border);}
+.sidebar-user{display:flex;align-items:center;gap:10px;overflow:hidden;}
+.sidebar-avatar{width:32px;height:32px;border-radius:50%;background:var(--cyan-dim);border:1px solid var(--cyan-glow);color:var(--cyan);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.sidebar-user-info{overflow:hidden;}
+.sidebar-username{font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sidebar-role{font-size:10px;color:var(--text-muted);}
+.sidebar.collapsed .sidebar-user-info{display:none;}
+
+/* ── MAIN WRAPPER ─────────────────────────────────────────── */
+.app-wrapper{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-width:0;transition:margin-left .2s;}
+.app-wrapper.sidebar-collapsed{margin-left:56px;}
+
+/* HEADER */
+.app-header{background:rgba(15,16,22,.92);backdrop-filter:blur(12px);padding:0 24px;height:64px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border);}
+.header-logo{background:var(--cyan-dim);color:var(--cyan);border:1px solid var(--cyan-glow);font-weight:800;font-size:13px;padding:6px 10px;border-radius:999px;letter-spacing:.04em;font-family:'Sarabun',sans-serif;}
+.header-title{color:var(--text-primary);font-weight:700;font-size:18px;flex:1;}
+.header-actions{display:flex;gap:8px;align-items:center;}
+.btn-edit{background:var(--bg-card-2);border:1px solid var(--border);color:var(--text-primary);padding:8px 14px;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;}
+.btn-edit:hover{border-color:var(--cyan);color:var(--cyan);}
+.btn-edit.on{background:var(--cyan);border-color:var(--cyan);color:#0a0a0f;}
+.btn-settings-wrap{position:relative;}
+.btn-icon{background:var(--bg-card-2);border:1px solid var(--border);color:var(--text-primary);width:36px;height:36px;border-radius:var(--radius-sm);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+.btn-icon:hover{border-color:var(--cyan);color:var(--cyan);}
+.notif-dot{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:var(--red);border:2px solid var(--bg-header);}
+.btn-add{background:var(--cyan);color:#0a0a0f;border:none;padding:10px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.btn-add:hover{opacity:.92;}
+
+/* STATS BAR */
+.stats-bar{background:var(--stats-bg);padding:14px 24px;display:flex;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--border);}
+.stat-card{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius);cursor:pointer;border:1px solid var(--border);background:var(--bg-card);transition:border-color .15s,transform .15s;}
+.stat-card:hover,.stat-card.active{border-color:var(--cyan-glow);transform:translateY(-1px);}
+.stat-icon{font-size:18px;}
+.stat-num{font-size:20px;font-weight:800;color:var(--text-primary);font-family:'Sarabun',sans-serif;}
+.stat-label{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.12em;}
+.stat-card.overdue .stat-num{color:#EF4444;}
+.stat-card.overdue-zero{opacity:.4;}
+
+/* ACTION BAR (slim — search + sort + view toggle) */
+.action-bar{background:rgba(10,10,15,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:10px 24px;display:flex;align-items:center;gap:10px;position:sticky;top:64px;z-index:90;}
+.action-bar-right{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:nowrap;}
+.search-box{display:flex;align-items:center;gap:6px;background:var(--bg-card-2);border:1px solid var(--border);border-radius:999px;padding:8px 14px;min-width:220px;max-width:340px;}
+.search-box input{border:none;background:transparent;outline:none;font-size:12px;color:var(--text-primary);width:100%;}
+.search-box input::placeholder{color:var(--text-muted);}
+.filter-sep{width:1px;height:20px;background:var(--border);margin:0 2px;}
+.count-text{font-size:12px;color:var(--text-muted);white-space:nowrap;}
+
+/* SORT */
+.sort-label{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;}
+.sort-btn{background:transparent;border:1px solid var(--border);color:var(--text-secondary);padding:6px 10px;border-radius:var(--radius-sm);font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .15s;}
+.sort-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.sort-btn.active{background:var(--cyan-dim);border-color:var(--cyan-glow);color:var(--cyan);}
+
+/* VIEW TOGGLE */
+.view-toggle{display:flex;gap:4px;border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px;background:var(--bg-card-2);}
+.view-btn{background:transparent;border:none;cursor:pointer;padding:4px 8px;border-radius:4px;color:var(--text-muted);}
+.view-btn.active{background:var(--cyan);color:#0a0a0f;}
+.view-btn svg{width:14px;height:14px;display:block;}
+
+/* EXPORT BTN */
+.btn-export{background:transparent;color:var(--cyan);border:1px solid var(--cyan-glow);padding:9px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;}
+.btn-export:hover{background:var(--cyan-dim);}
+
+/* GALLERY */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;padding:20px;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:none;transition:border-color .2s,transform .2s;}
+.card:hover{border-color:var(--cyan-glow);transform:translateY(-2px);}
+.card-img{width:100%;height:120px;object-fit:cover;background:var(--bg-page);display:flex;align-items:center;justify-content:center;font-size:36px;color:var(--text-muted);}
+.card-img img{width:100%;height:100%;object-fit:contain;padding:8px;}
+.card-body{padding:12px;}
+.card-title{font-size:13px;font-weight:600;color:var(--text-primary);line-height:1.35;margin-bottom:6px;}
+.card-badges{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;}
+.card-hazard{font-size:10px;color:var(--text-muted);line-height:1.5;padding:4px 0;border-top:1px solid var(--border-light);margin-bottom:6px;}
+.card-dates{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;margin-bottom:8px;}
+.date-item{font-size:10px;}
+.date-label{color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;font-weight:500;}
+.date-val{font-weight:600;color:var(--text-primary);}
+.date-val.overdue{color:#EF4444;}
+.card-links{display:flex;gap:8px;flex-wrap:wrap;}
+.card-footer{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--border-light);}
+.card-edit-btns{display:flex;gap:6px;}
+
+/* TILE VIEW */
+.tiles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;padding:16px 20px;}
+.tile{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;display:flex;flex-direction:column;gap:8px;box-shadow:none;}
+.tile-top{display:flex;align-items:flex-start;gap:10px;}
+.tile-thumb{width:44px;height:44px;border-radius:6px;background:var(--bg-page);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.tile-thumb img{width:100%;height:100%;object-fit:contain;border-radius:6px;}
+.tile-info{flex:1;min-width:0;}
+.tile-title{font-size:13px;font-weight:600;line-height:1.3;margin-bottom:4px;}
+.tile-dates{display:flex;gap:12px;font-size:10px;}
+.tile-links{display:flex;gap:8px;flex-wrap:wrap;}
+.tile-bottom{display:flex;justify-content:space-between;align-items:center;}
+
+/* LIST VIEW */
+.list-table{width:100%;border-collapse:collapse;font-size:12px;}
+.list-table thead th{background:var(--bg-header);color:var(--text-primary);padding:10px 12px;text-align:left;font-weight:600;font-size:11px;letter-spacing:.3px;white-space:nowrap;position:sticky;top:calc(64px + 48px + 54px);z-index:10;}
+.list-table thead th.sortable{cursor:pointer;user-select:none;}
+.list-table thead th.sortable:hover{background:#374151;}
+.list-table thead th .sort-arrow{margin-left:4px;opacity:.4;}
+.list-table thead th.sort-asc .sort-arrow:after{content:'↑';opacity:1;}
+.list-table thead th.sort-desc .sort-arrow:after{content:'↓';opacity:1;}
+.list-table thead th .sort-arrow:after{content:'↕';}
+.list-table tbody tr{border-bottom:1px solid var(--border-light);}
+.list-table tbody tr:hover{background:var(--bg-page);}
+.list-table td{padding:8px 12px;vertical-align:middle;}
+.list-table .td-name{font-weight:600;min-width:200px;}
+.list-table .td-th{color:var(--text-secondary);font-size:11px;}
+.list-table .td-pn{color:var(--text-muted);font-size:11px;font-family:monospace;}
+.list-table .td-date{font-size:11px;white-space:nowrap;}
+.list-table .td-date.overdue{color:#EF4444;font-weight:600;}
+.list-table .td-links{min-width:120px;}
+.list-table .td-actions{white-space:nowrap;}
+.list-wrap{padding:0 20px 20px;overflow-x:auto;}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;white-space:nowrap;}
+.badge-flammable{background:rgba(255,122,92,.12);color:#ff7a5c;border:1px solid rgba(255,122,92,.28);}
+.badge-nonflammable{background:rgba(77,220,154,.12);color:#4ddc9a;border:1px solid rgba(77,220,154,.28);}
+.badge-active{background:rgba(77,220,154,.12);color:#4ddc9a;border:1px solid rgba(77,220,154,.28);}
+.badge-inactive{background:rgba(120,120,143,.12);color:#b5b5c7;border:1px solid rgba(120,120,143,.22);}
+.badge-overdue{background:rgba(255,95,122,.12);color:#ff5f7a;border:1px solid rgba(255,95,122,.28);}
+
+/* SDS LINK BADGES */
+.sds-link{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;border:none;text-decoration:none;white-space:nowrap;}
+.sds-en{background:var(--cyan-dim);color:var(--cyan);border:1px solid var(--cyan-glow);}
+.sds-en:hover{background:rgba(77,216,232,.22);}
+.sds-th{background:rgba(255,95,122,.12);color:#ff8aa0;border:1px solid rgba(255,95,122,.26);}
+.sds-th:hover{background:rgba(255,95,122,.2);}
+.sds-disabled{background:var(--bg-card-2);color:var(--text-muted);cursor:default;border:1px solid var(--border);}
+
+/* EDIT/DELETE BTNS */
+.btn-edit-card{background:var(--bg-page);border:1px solid var(--border);color:var(--text-secondary);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;}
+.btn-edit-card:hover{border-color:var(--red);color:var(--red);}
+.btn-delete-card{background:#FEE2E2;border:1px solid #FECACA;color:#DC2626;padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;}
+.btn-delete-card:hover{background:#DC2626;color:#fff;}
+.btn-log{background:var(--bg-page);border:1px solid var(--border);color:var(--text-secondary);padding:4px 8px;border-radius:5px;font-size:10px;cursor:pointer;display:inline-flex;align-items:center;gap:3px;}
+.btn-log:hover{border-color:#1D4ED8;color:#1D4ED8;}
+.log-badge{background:#1D4ED8;color:#fff;border-radius:8px;padding:0 5px;font-size:9px;font-weight:700;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.68);backdrop-filter:blur(8px);z-index:200;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--bg-card);border:1px solid var(--border);border-radius:20px;padding:24px;width:560px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow);}
+.modal h3{font-size:18px;font-weight:700;margin-bottom:16px;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px;}
+.field input,.field select,.field textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg-page);color:var(--text-primary);outline:none;}
+.field input:focus,.field select:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(77,216,232,.12);}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;}
+.btn-primary{background:var(--cyan);color:#0a0a0f;border:none;padding:10px 20px;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;}
+.btn-primary:hover{opacity:.92;}
+.btn-secondary{background:var(--bg-card-2);border:1px solid var(--border);color:var(--text-secondary);padding:10px 20px;border-radius:var(--radius-sm);font-size:13px;cursor:pointer;}
+
+/* LOG MODAL */
+.log-entry{padding:8px 10px;border-radius:6px;margin-bottom:6px;font-size:12px;border-left:3px solid;}
+.log-added{background:#F0FDF4;border-color:#22C55E;}
+.log-edited{background:#EFF6FF;border-color:#3B82F6;}
+.log-deleted{background:#FFF1F2;border-color:#F43F5E;}
+.log-meta{font-size:10px;color:var(--text-muted);margin-top:2px;}
+.log-diff{font-size:11px;color:var(--text-secondary);margin-top:4px;}
+
+/* SETTINGS PANEL */
+.settings-overlay{display:none;position:fixed;inset:0;z-index:300;}
+.settings-overlay.open{display:block;}
+.settings-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);}
+.settings-panel{position:absolute;right:0;top:0;bottom:0;width:380px;background:var(--bg-card);border-left:1px solid var(--border);box-shadow:-10px 0 30px rgba(0,0,0,.3);overflow-y:auto;display:flex;flex-direction:column;}
+.settings-header{background:var(--bg-header);padding:16px 20px;color:#fff;display:flex;justify-content:space-between;align-items:center;}
+.settings-header h3{font-size:14px;font-weight:700;}
+.settings-close{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:0;line-height:1;}
+.settings-body{flex:1;overflow-y:auto;padding:16px;}
+.settings-section{margin-bottom:20px;}
+.settings-section h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.settings-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:13px;}
+.settings-input{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--bg-page);color:var(--text-primary);outline:none;margin-top:4px;}
+.theme-tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.theme-tile{border:2px solid var(--border);border-radius:8px;padding:10px;cursor:pointer;text-align:center;font-size:12px;}
+.theme-tile.active{border-color:var(--cyan);background:var(--cyan-dim);color:var(--cyan);}
+.font-btns{display:flex;flex-direction:column;gap:6px;}
+.font-btn{padding:7px 10px;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px;background:var(--bg-page);color:var(--text-primary);text-align:left;}
+.font-btn.active{border-color:var(--cyan);background:var(--cyan-dim);color:var(--cyan);}
+.fontsize-row{display:flex;align-items:center;gap:10px;}
+.fontsize-btn{width:28px;height:28px;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:16px;background:var(--bg-page);display:flex;align-items:center;justify-content:center;}
+.fontsize-val{font-size:14px;font-weight:600;min-width:32px;text-align:center;}
+.storage-box{background:var(--bg-page);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;}
+.storage-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border-light);}
+.storage-row:last-child{border:none;}
+.storage-key{color:var(--text-muted);}
+.storage-val{color:var(--text-primary);font-weight:500;}
+.storage-warn{background:#FEF3C7;border:1px solid #FDE68A;border-radius:6px;padding:10px;font-size:11px;color:#92400E;margin-top:10px;line-height:1.5;}
+.settings-footer{padding:16px;border-top:1px solid var(--border);}
+.btn-reset{background:var(--bg-page);border:1px solid var(--border);color:var(--text-secondary);padding:8px 16px;border-radius:6px;font-size:12px;cursor:pointer;width:100%;}
+
+/* EMAIL REMINDER */
+.email-tags{display:flex;flex-wrap:wrap;gap:4px;padding:6px;border:1px solid var(--border);border-radius:6px;background:var(--bg-page);min-height:34px;cursor:text;}
+.email-tag{background:var(--red);color:#fff;padding:2px 8px;border-radius:12px;font-size:11px;display:flex;align-items:center;gap:4px;}
+.email-tag-remove{cursor:pointer;opacity:.7;}
+.email-tag-remove:hover{opacity:1;}
+.email-input-inline{border:none;outline:none;background:transparent;font-size:12px;color:var(--text-primary);min-width:120px;flex:1;}
+.reminder-preview{background:var(--bg-page);border:1px solid var(--border);border-radius:6px;padding:10px;font-size:11px;line-height:1.6;margin-top:8px;max-height:120px;overflow-y:auto;}
+.btn-send{background:var(--red);color:#fff;border:none;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;width:100%;margin-top:8px;}
+.btn-test-email{background:var(--bg-page);border:1px solid var(--border);color:var(--text-secondary);padding:7px 14px;border-radius:6px;font-size:12px;cursor:pointer;width:100%;margin-top:6px;}
+
+/* TOAST */
+.toast-wrap{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:500;pointer-events:none;}
+.toast{background:var(--bg-card-2);color:var(--text-primary);padding:10px 18px;border-radius:999px;font-size:13px;border:1px solid var(--border);box-shadow:var(--shadow);opacity:0;transition:opacity .3s,transform .25s;transform:translateY(8px);pointer-events:auto;}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.success{border-color:rgba(77,220,154,.28);color:#4ddc9a;}
+.toast.warning{border-color:rgba(255,166,77,.35);color:#ffa64d;}
+
+/* IMG UPLOAD */
+.img-preview{width:80px;height:80px;border-radius:6px;object-fit:contain;background:var(--bg-page);border:1px solid var(--border);}
+.img-upload-btn{background:var(--bg-page);border:1px solid var(--border);color:var(--text-secondary);padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;display:inline-block;}
+
+/* OFFLINE PDF */
+.pdf-upload-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px;}
+.pdf-status{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:600;}
+.pdf-stored{background:#DCFCE7;color:#166534;border:1px solid #BBF7D0;}
+.pdf-missing{background:#F3F4F6;color:#6B7280;border:1px solid #E5E7EB;}
+.btn-pdf-upload{background:var(--bg-page);border:1px solid var(--border);color:var(--text-secondary);padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;}
+.btn-pdf-open{background:#1D4ED8;color:#fff;border:none;padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;}
+.btn-pdf-open:hover{background:#1e40af;}
+.btn-pdf-clear{background:#FEE2E2;border:1px solid #FECACA;color:#DC2626;padding:5px 8px;border-radius:5px;font-size:11px;cursor:pointer;}
+.sds-offline{background:#15803D;color:#fff;}
+.sds-offline:hover{background:#166534;}
+.pdf-size-warn{font-size:10px;color:#92400E;background:#FEF3C7;border:1px solid #FDE68A;border-radius:4px;padding:3px 7px;}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="sidebar-brand-icon">SDS</div>
+    <span class="sidebar-brand-text">SDS Vault</span>
+    <button class="sidebar-toggle" onclick="toggleSidebar()" title="Collapse sidebar">&#9776;</button>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Main</div>
+    <div class="nav-item active" data-tip="Dashboard" onclick="setPage('dashboard')">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h5a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zm9 0a1 1 0 011-1h3a1 1 0 011 1v6a1 1 0 01-1 1h-3a1 1 0 01-1-1v-6z"/></svg>
+      <span class="nav-item-text">Dashboard</span>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Library</div>
+    <div class="nav-item" data-tip="All records" onclick="setPage('all');setFilter('all',null)">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>
+      <span class="nav-item-text">All Records</span>
+    </div>
+    <div class="nav-item" data-tip="Flammable" onclick="setPage('flammable');setFilter('flammable',null)">
+      <span class="nav-icon" style="font-size:16px;">🔥</span>
+      <span class="nav-item-text">Flammable</span>
+    </div>
+    <div class="nav-item" data-tip="Non-Flammable" onclick="setPage('nonflammable');setFilter('nonflammable',null)">
+      <span class="nav-icon" style="font-size:16px;">✓</span>
+      <span class="nav-item-text">Non-Flammable</span>
+    </div>
+    <div class="nav-item" data-tip="Needs review" onclick="setPage('overdue');setFilter('overdue',null)" id="navOverdue">
+      <span class="nav-icon" style="font-size:16px;">⚠️</span>
+      <span class="nav-item-text">Needs Review</span>
+      <span id="navOverdueBadge" style="margin-left:auto;background:#EF4444;color:#fff;border-radius:10px;padding:0 6px;font-size:10px;font-weight:700;display:none;"></span>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Category</div>
+    <div class="nav-item" data-tip="All Categories" onclick="setPage('cat-all');setSubject('')">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+      <span class="nav-item-text">All Categories</span>
+    </div>
+    <div class="nav-item" data-tip="Aerosol" onclick="setPage('cat-Aerosol');setSubject('Aerosol')">
+      <span class="nav-icon" style="font-size:16px;">💨</span>
+      <span class="nav-item-text">Aerosol</span>
+    </div>
+    <div class="nav-item" data-tip="Lubricant / Oil" onclick="setPage('cat-Lubricant');setSubject('Lubricant')">
+      <span class="nav-icon" style="font-size:16px;">🛢</span>
+      <span class="nav-item-text">Lubricant / Oil</span>
+    </div>
+    <div class="nav-item" data-tip="Solvent / Cleaner" onclick="setPage('cat-Solvent');setSubject('Solvent')">
+      <span class="nav-icon" style="font-size:16px;">🧪</span>
+      <span class="nav-item-text">Solvent / Cleaner</span>
+    </div>
+    <div class="nav-item" data-tip="Solder" onclick="setPage('cat-Solder');setSubject('Solder')">
+      <span class="nav-icon" style="font-size:16px;">⚡</span>
+      <span class="nav-item-text">Solder</span>
+    </div>
+    <div class="nav-item" data-tip="Silicone / Adhesive" onclick="setPage('cat-Silicone');setSubject('Silicone')">
+      <span class="nav-icon" style="font-size:16px;">🔬</span>
+      <span class="nav-item-text">Silicone / Adhesive</span>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Tools</div>
+    <div class="nav-item" data-tip="Add record" onclick="openAddModal()">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+      <span class="nav-item-text">Add Record</span>
+    </div>
+    <div class="nav-item" data-tip="Export workbook" onclick="exportToXLSX()">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+      <span class="nav-item-text">Export Workbook</span>
+    </div>
+    <div class="nav-item" data-tip="Settings" onclick="openSettings()">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+      <span class="nav-item-text">Settings</span>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="sidebar-avatar" id="sidebarAvatar">?</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-username" id="sidebarUsername">—</div>
+        <div class="sidebar-role">Record steward</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN WRAPPER -->
+<div class="app-wrapper" id="appWrapper">
+
+<!-- HEADER -->
+<div class="app-header">
+  <span class="header-logo">SDS</span>
+  <span class="header-title">Lab_Sonde SDS Vault</span>
+  <div class="header-actions">
+    <button class="btn-edit" id="editToggle" onclick="toggleEditMode()">Edit Mode</button>
+    <div class="btn-settings-wrap">
+      <button class="btn-icon" onclick="openSettings()" title="Settings">⚙</button>
+      <div class="notif-dot" id="notifDot" style="display:none;"></div>
+    </div>
+    <button class="btn-export" onclick="exportToXLSX()">Export Workbook</button>
+    <button class="btn-add" onclick="openAddModal()">+ Add Record</button>
+  </div>
+</div>
+
+<!-- STATS BAR -->
+<div class="stats-bar" id="statsBar"></div>
+
+<!-- SLIM ACTION BAR -->
+<div class="action-bar">
+  <div class="search-box">
+    <span style="color:var(--text-muted);font-size:14px;">⌕</span>
+    <input type="text" id="searchInput" placeholder="Search product, hazard, category..." oninput="renderView()">
+  </div>
+  <div class="action-bar-right">
+    <span class="count-text">Showing <strong id="countDisplay">0</strong> of <strong id="totalDisplay">0</strong></span>
+    <div class="filter-sep"></div>
+    <span class="sort-label">Sort</span>
+    <button class="sort-btn active" id="sortDefault" onclick="setSort('default')">Default</button>
+    <button class="sort-btn" id="sortAZ" onclick="setSort('az')">A → Z</button>
+    <button class="sort-btn" id="sortZA" onclick="setSort('za')">Z → A</button>
+    <div class="filter-sep"></div>
+    <div class="view-toggle">
+      <button class="view-btn active" id="vbtn-gallery" title="Gallery" onclick="setView('gallery')">
+        <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx=".5"/><rect x="9" y="1" width="6" height="6" rx=".5"/><rect x="1" y="9" width="6" height="6" rx=".5"/><rect x="9" y="9" width="6" height="6" rx=".5"/></svg>
+      </button>
+      <button class="view-btn" id="vbtn-tiles" title="Tiles" onclick="setView('tiles')">
+        <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="14" height="4" rx=".5"/><rect x="1" y="6" width="14" height="4" rx=".5"/><rect x="1" y="11" width="14" height="4" rx=".5"/></svg>
+      </button>
+      <button class="view-btn" id="vbtn-list" title="List" onclick="setView('list')">
+        <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2" width="14" height="2" rx=".5"/><rect x="1" y="7" width="14" height="2" rx=".5"/><rect x="1" y="12" width="14" height="2" rx=".5"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div id="mainContent"></div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h3 id="modalTitle">Add Record</h3>
+    <div class="field">
+      <label>Product Name (EN)</label>
+      <input type="text" id="f_title" placeholder="e.g. CRC CO Contact Cleaner">
+    </div>
+    <div class="field">
+      <label>Thai Name</label>
+      <input type="text" id="f_thname" placeholder="ชื่อภาษาไทย">
+    </div>
+    <div class="field">
+      <label>Part Number (P/N)</label>
+      <input type="text" id="f_pn" placeholder="e.g. 100006759">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Flammable</label>
+        <select id="f_flammable">
+          <option value="">— Unknown —</option>
+          <option value="flammable">Flammable</option>
+          <option value="nonflammable">Non-Flammable</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="f_status">
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Category / Subject</label>
+      <select id="f_subject">
+        <option value="">— None —</option>
+        <option value="Adhesive">Adhesive</option>
+        <option value="Aerosol">Aerosol</option>
+        <option value="Cleaner">Cleaner</option>
+        <option value="Lubricant">Lubricant</option>
+        <option value="Oil">Oil</option>
+        <option value="Silicone">Silicone</option>
+        <option value="Solder">Solder</option>
+        <option value="Solvent">Solvent</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Hazard Summary</label>
+      <input type="text" id="f_hazard" placeholder="e.g. Flammable, skin irritant, avoid inhalation">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Rev. Date</label>
+        <input type="text" id="f_revdate" placeholder="MM/DD/YYYY">
+      </div>
+      <div class="field">
+        <label>Follow Up Date</label>
+        <input type="text" id="f_followup" placeholder="MM/DD/YYYY">
+      </div>
+    </div>
+    <div class="field">
+      <label>EN — SDS Label</label>
+      <input type="text" id="f_en_label" placeholder="e.g. SDS - Product Name">
+      <input type="text" id="f_en_url" placeholder="https://… SharePoint URL (leave blank if offline only)" style="margin-top:6px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">
+        <div><label style="font-size:10px;color:var(--text-muted);">EN Rev. Date</label><input type="text" id="f_en_revdate" placeholder="MM/DD/YYYY"></div>
+        <div><label style="font-size:10px;color:var(--text-muted);">EN Revision #</label><input type="text" id="f_en_rev" placeholder="e.g. 03 / v2.1"></div>
+      </div>
+      <div class="pdf-upload-row">
+        <span style="font-size:10px;color:var(--text-muted);font-weight:600;">📥 OFFLINE PDF (EN):</span>
+        <span id="en_pdf_status" class="pdf-status pdf-missing">No file stored</span>
+        <label class="btn-pdf-upload">📎 Upload PDF<input type="file" id="en_pdf_input" accept="application/pdf" style="display:none;" onchange="handlePdfUpload(event,'en')"></label>
+        <button type="button" id="en_pdf_open" class="btn-pdf-open" style="display:none;" onclick="openOfflinePdf('en')">📄 Open</button>
+        <button type="button" id="en_pdf_clear" class="btn-pdf-clear" style="display:none;" onclick="clearOfflinePdf('en')">✕</button>
+      </div>
+      <div id="en_pdf_warn" class="pdf-size-warn" style="display:none;margin-top:4px;">⚠ PDF is large (&gt;5 MB). It may not save in all browsers.</div>
+    </div>
+    <div class="field">
+      <label>TH — SDS Label</label>
+      <input type="text" id="f_th_label" placeholder="e.g. SDS - ชื่อผลิตภัณฑ์">
+      <input type="text" id="f_th_url" placeholder="https://… SharePoint URL (Thai, leave blank if offline only)" style="margin-top:6px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">
+        <div><label style="font-size:10px;color:var(--text-muted);">TH Rev. Date</label><input type="text" id="f_th_revdate" placeholder="MM/DD/YYYY"></div>
+        <div><label style="font-size:10px;color:var(--text-muted);">TH Revision #</label><input type="text" id="f_th_rev" placeholder="e.g. 03 / v2.1"></div>
+      </div>
+      <div class="pdf-upload-row">
+        <span style="font-size:10px;color:var(--text-muted);font-weight:600;">📥 OFFLINE PDF (TH):</span>
+        <span id="th_pdf_status" class="pdf-status pdf-missing">No file stored</span>
+        <label class="btn-pdf-upload">📎 Upload PDF<input type="file" id="th_pdf_input" accept="application/pdf" style="display:none;" onchange="handlePdfUpload(event,'th')"></label>
+        <button type="button" id="th_pdf_open" class="btn-pdf-open" style="display:none;" onclick="openOfflinePdf('th')">📄 Open</button>
+        <button type="button" id="th_pdf_clear" class="btn-pdf-clear" style="display:none;" onclick="clearOfflinePdf('th')">✕</button>
+      </div>
+      <div id="th_pdf_warn" class="pdf-size-warn" style="display:none;margin-top:4px;">⚠ PDF is large (&gt;5 MB). It may not save in all browsers.</div>
+    </div>
+    <div class="field">
+      <label>Manufacturer</label>
+      <input type="text" id="f_mfr" placeholder="e.g. CRC Industries, Henkel, Dow…">
+      <input type="text" id="f_productinfo" placeholder="https://manufacturer-website.com" style="margin-top:6px;">
+    </div>
+    <div class="field">
+      <label>Product Image</label>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <img id="imgPreview" class="img-preview" src="" alt="" style="display:none;">
+        <span id="imgPlaceholder" style="font-size:28px;">📦</span>
+        <label class="img-upload-btn">📎 Upload Image<input type="file" id="imgInput" accept="image/*" style="display:none;" onchange="handleImgUpload(event)"></label>
+        <button type="button" onclick="clearImg()" style="font-size:11px;color:var(--text-muted);background:none;border:none;cursor:pointer;">✕ Clear</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeEditModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveRecord()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOG MODAL -->
+<div class="modal-overlay" id="logModal">
+  <div class="modal">
+    <h3 id="logModalTitle">Audit Log</h3>
+    <div id="logModalBody" style="max-height:400px;overflow-y:auto;"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeLogModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS PANEL -->
+<div class="settings-overlay" id="settingsOverlay">
+  <div class="settings-backdrop" onclick="closeSettings()"></div>
+  <div class="settings-panel">
+    <div class="settings-header">
+      <h3>⚙ Settings</h3>
+      <button class="settings-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-section">
+        <h4>👤 Your Name</h4>
+        <input class="settings-input" id="settingsUsername" placeholder="Enter your name for audit log…" oninput="saveUser()">
+      </div>
+      <div class="settings-section">
+        <h4>Color Theme</h4>
+        <div class="theme-tiles">
+          <div class="theme-tile active" id="tile-light" onclick="setTheme('light')">☀ Light</div>
+          <div class="theme-tile" id="tile-dark" onclick="setTheme('dark')">🌙 Dark</div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h4>Font Family</h4>
+        <div class="font-btns" id="fontBtns"></div>
+      </div>
+      <div class="settings-section">
+        <h4>Font Size</h4>
+        <div class="fontsize-row">
+          <button class="fontsize-btn" onclick="changeFontSize(-1)">−</button>
+          <span class="fontsize-val" id="fontsizeVal">14px</span>
+          <button class="fontsize-btn" onclick="changeFontSize(1)">+</button>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h4>📧 Revision Reminder Email</h4>
+        <label style="font-size:11px;color:var(--text-muted);">Recipients</label>
+        <div class="email-tags" id="emailTags" onclick="document.getElementById('emailInlineInput').focus()">
+          <input class="email-input-inline" id="emailInlineInput" placeholder="Add email, press Enter…" onkeydown="handleEmailKey(event)">
+        </div>
+        <label style="font-size:11px;color:var(--text-muted);margin-top:8px;display:block;">Reminder window</label>
+        <select class="settings-input" id="reminderDays" onchange="saveReminderSettings();renderReminderPreview()">
+          <option value="30">30 days before</option>
+          <option value="60">60 days before</option>
+          <option value="90">90 days before</option>
+          <option value="180">180 days before</option>
+        </select>
+        <div class="reminder-preview" id="reminderPreview"></div>
+        <button class="btn-send" onclick="sendReminder()">📧 Send Reminder Now</button>
+        <button class="btn-test-email" onclick="sendTestEmail()">🧪 Test Email</button>
+      </div>
+      <div class="settings-section">
+        <h4>📦 Storage Info</h4>
+        <div class="storage-box">
+          <div class="storage-row"><span class="storage-key">Type</span><span class="storage-val">Browser localStorage</span></div>
+          <div class="storage-row"><span class="storage-key">Location</span><span class="storage-val" id="storageLocation">—</span></div>
+          <div class="storage-row"><span class="storage-key">Records Saved</span><span class="storage-val" id="storageCount">—</span></div>
+          <div class="storage-row"><span class="storage-key">Est. Storage Used</span><span class="storage-val" id="storageSize">—</span></div>
+        </div>
+        <div class="storage-warn">⚠ Images and edits are saved <strong>only in this browser</strong>. They are not uploaded to SharePoint. Use the Clear button below if items appear missing.</div>
+        <div style="margin-top:10px;">
+          <button style="background:#C8102E;color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:12px;cursor:pointer;width:100%;" onclick="clearStorage()">
+            🗑 Clear Saved Data — Reload with All 41 Built-in Records
+          </button>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:5px;text-align:center;">Use if page shows fewer items than expected</div>
+        </div>
+      </div>
+    </div>
+    <div class="settings-footer">
+      <button class="btn-reset" onclick="resetSettings()">↺ Reset to Default Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+</div><!-- /app-wrapper -->
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────
+let records=[
+  {id:1, title:"1605 DUOLEC® Vari-Purpose Gear Lubricant",     thName:"น้ำมันหล่อลื่นเกียร์ DUOLEC® 1605",          pn:"100006759", flammable:"nonflammable",status:"active",revDate:"4/18/2025", followUp:"4/18/2030", subject:"Lubricant",needPrint:true, halEN:true, halTH:true, hazard:"Refer to Lubrication Engineers SDS page.",                                                   enLabel:"SDS - 1605 DUOLEC® Gear Lubricant (EN)",   enUrl:"https://products.lelubricants.com/media/product_files/pdfs/safety/1605_Safety_Data_Sheet.pdf",thLabel:"SDS - น้ำมันเกียร์ DUOLEC® 1605 (TH)",thUrl:"",productInfo:"https://www.lelubricants.com",mfr:"Lubrication Engineers",enRevDate:"4/18/2025",enRev:"",thRevDate:"",thRev:"",img:"",log:[]},
+  {id:2, title:"Aerosol All-Purpose Spray Paint",               thName:"สเปรย์สีอเนกประสงค์แบบละออง",              pn:"",          flammable:"flammable",    status:"active",revDate:"1/1/2024",followUp:"1/1/2029",subject:"Aerosol",  needPrint:false,halEN:false,halTH:false,hazard:"Extremely flammable aerosol, suspected carcinogen, harmful to aquatic life.",               enLabel:"SDS - Aerosol All-Purpose Spray Paint (EN)",          enUrl:"https://www.hpadhesives.com/wp-content/uploads/2024/01/SPRAY-PAINT_SDS.pdf",              thLabel:"SDS - สเปรย์สีอเนกประสงค์ (TH)",thUrl:"",productInfo:"https://www.toagroup.com",mfr:"TOA Group",enRevDate:"1/1/2024",enRev:"1",thRevDate:"",thRev:"",img:"",log:[]},
+  {id:3, title:"Breakthrough",                                  thName:"เบรคธรู",                                   pn:"101977394", flammable:"flammable",    status:"active",revDate:"6/11/2020", followUp:"6/11/2025", subject:"Solvent",  needPrint:true, halEN:true, halTH:false,hazard:"Combustible liquid, aspiration hazard.",                                                         enLabel:"SDS - Breakthrough Solvent (EN)",                 enUrl:"https://cdn11.bigcommerce.com/s-jifykode7m/product_images/uploaded_images/msds/SGP101402.pdf",thLabel:"SDS - Breakthrough (TH)",thUrl:"",productInfo:"https://www.inlandtech.com",mfr:"Inland Technology",enRevDate:"6/11/2020",enRev:"",thRevDate:"",thRev:"",img:"",log:[]},
+  {id:4, title:"CRC CO Contact Cleaner",                        thName:"น้ำยาทำความสะอาดหน้าสัมผัส CRC CO",       pn:"98819",     flammable:"flammable",    status:"active",revDate:"7/7/2022", followUp:"7/7/2027", subject:"Cleaner",  needPrint:true, halEN:false,halTH:false,hazard:"Pressurized container, skin and eye irritation, respiratory irritation.",                    enLabel:"SDS - CRC CO® Contact Cleaner (EN)",       enUrl:"https://www.crcindustries.com/media/msdsen/crc_ca/msds_en-1006114.pdf",                    thLabel:"SDS - CRC CO® Contact Cleaner (TH)",thUrl:"https://www.crcindustries.com/media/msdsth/msds_th-1006114.pdf",productInfo:"https://www.crcindustries.com",mfr:"CRC Industries",enRevDate:"7/7/2022",enRev:"03",thRevDate:"7/7/2022",thRev:"03",img:"",log:[]},
+  {id:5, title:"Hexane",                                        thName:"เฮกเซน",                                   pn:"",          flammable:"flammable",    status:"active",revDate:"12/24/2021",followUp:"12/24/2026",subject:"Solvent",  needPrint:true, halEN:false,halTH:false,hazard:"Highly flammable, aspiration hazard, suspected reproductive toxicity, CNS effects.",          enLabel:"SDS - Hexane (EN)",                       enUrl:"https://www.modernchemical.co.th/products/pdf/msds-en/Hydrocarbons/SDS_Hexane_MCC_En.pdf",thLabel:"SDS - เฮกเซน (TH)",thUrl:"https://www.rcilabscan.com/wp-content/uploads/2019/11/n-Hexane-95-T-010421.pdf",productInfo:"https://www.modernchemical.co.th",mfr:"Modern Chemical",enRevDate:"12/24/2021",enRev:"",thRevDate:"4/1/2021",thRev:"",img:"",log:[]},
+  {id:6, title:"Isopropyl Alcohol 99.9%",                       thName:"ไอโซโพรพิลแอลกอฮอล์ 99.9%",              pn:"",          flammable:"flammable",    status:"active",revDate:"3/1/2024",          followUp:"3/1/2029",          subject:"Solvent",  needPrint:false,halEN:false,halTH:false,hazard:"Highly flammable, eye and skin irritant, CNS depressant at high concentrations.",              enLabel:"SDS - Isopropyl Alcohol 99.9% (EN)",      enUrl:"https://www.sigmaaldrich.com/US/en/sds/sial/190764",thLabel:"SDS - ไอโซโพรพิลแอลกอฮอล์ 99.9% (TH)",thUrl:"https://www.rcilabscan.com/wp-content/uploads/2021/01/Isopropyl-Alcohol-99-T.pdf",productInfo:"",mfr:"",enRevDate:"3/1/2024",enRev:"",thRevDate:"1/1/2021",thRev:"",img:"",log:[]},
+  {id:7, title:"LOCTITE 243",                                   thName:"กาวล็อคไทท์ 243",                          pn:"",          flammable:"flammable",    status:"active",revDate:"6/11/2025", followUp:"6/11/2030",  subject:"Adhesive", needPrint:false,halEN:false,halTH:false,hazard:"Skin sensitizer, eye irritation, harmful to aquatic life.",                                       enLabel:"SDS - LOCTITE® 243 Threadlocker (EN)",                  enUrl:"https://api.henkeldx.com/v2/mysds/SafetyDataSheetSet?X-Api-Key=b0gwWC8EZlgUAd7j5GPSmNoR6uOHZ6XB&Appid=%27YPSSW_SDSUA_EXT%27&Matnr=%271335884%27&Laiso=%27EN%27&Rvlid=%27US%27&Dmskey=%27%27",      thLabel:"SDS - LOCTITE® 243 (TH) - Henkel DX",thUrl:"https://api.henkeldx.com/v2/mysds/SafetyDataSheetSet?X-Api-Key=b0gwWC8EZlgUAd7j5GPSmNoR6uOHZ6XB&Appid=%27YPSSW_SDSUA_EXT%27&Matnr=%271335884%27&Laiso=%27TH%27&Rvlid=%27US%27&Dmskey=%27%27",productInfo:"https://www.henkel.com",mfr:"Henkel (Loctite)",enRevDate:"6/11/2025",enRev:"001.3",thRevDate:"6/11/2025",thRev:"",img:"",log:[]},
+  {id:8, title:"LOCTITE LB8008 Anti-Seize",                     thName:"สารป้องกันการติดล็อคไทท์ LB8008",         pn:"",          flammable:"nonflammable", status:"active",revDate:"8/3/2025",followUp:"8/3/2030",subject:"Lubricant", needPrint:true, halEN:false,halTH:false,hazard:"Skin irritation, serious eye damage, chronic aquatic toxicity.",                                 enLabel:"SDS - LOCTITE® LB 8008 Anti-Seize (EN)",    enUrl:"https://www1.mscdirect.com/MSDS/MSDS00020/00129189-20250803.PDF",                          thLabel:"SDS - LOCTITE® LB 8008 (TH) - Henkel DX",thUrl:"https://api.henkeldx.com/v2/mysds/SafetyDataSheetSet?X-Api-Key=b0gwWC8EZlgUAd7j5GPSmNoR6uOHZ6XB&Appid=%27YPSSW_SDSUA_EXT%27&Matnr=%271259460%27&Laiso=%27EN%27&Rvlid=%27US%27&Dmskey=%27%27",productInfo:"https://www.henkel.com",mfr:"Henkel (Loctite)",enRevDate:"8/3/2025",enRev:"",thRevDate:"8/3/2025",thRev:"",img:"",log:[]},
+  {id:9, title:"Mobil Rarus SHC 1024",                          thName:"น้ำมันคอมเพรสเซอร์ โมบิล Rarus SHC 1024", pn:"120157690", flammable:"nonflammable", status:"active",revDate:"1/30/2021", followUp:"1/30/2026", subject:"Oil",      needPrint:false,halEN:false,halTH:false,hazard:"Not classified as hazardous; high-pressure injection risk.",                                        enLabel:"SDS - Mobil Rarus SHC 1024 (EN)",         enUrl:"https://avepetroleum.com/uploads/msds_docs/MOBIL-RARUS-SHC-1024-MSDS.pdf",                thLabel:"SDS - Mobil Rarus SHC 1024 (TH) - ExxonMobil PSIMS",thUrl:"https://www.msds.exxonmobil.com/psims/psims.aspx",productInfo:"https://www.esso.co.th",mfr:"ExxonMobil",enRevDate:"1/30/2021",enRev:"",thRevDate:"1/30/2021",thRev:"",img:"",log:[]},
+  {id:10,title:"Mobil Vacuum Pump Oil",                         thName:"น้ำมันปั๊มสุญญากาศ โมบิล",                pn:"120161899", flammable:"nonflammable", status:"active",revDate:"9/9/2023", followUp:"9/9/2028", subject:"Oil",      needPrint:false,halEN:false,halTH:false,hazard:"Not classified as hazardous; avoid high-pressure injection injuries.",                            enLabel:"SDS - Mobil Vacuum Pump Oil (EN)",         enUrl:"https://www1.mscdirect.com/MSDS/MSDS00009/60002573-20230909.PDF",                          thLabel:"SDS - Mobil Vacuum Pump Oil (TH) - ExxonMobil PSIMS",thUrl:"https://www.msds.exxonmobil.com/psims/psims.aspx",productInfo:"https://www.exxonmobil.com",mfr:"ExxonMobil",enRevDate:"9/9/2023",enRev:"",thRevDate:"9/9/2023",thRev:"",img:"",log:[]},
+  {id:11,title:"Molykote 111 Compound",                         thName:"โมลิโค้ท 111 คอมพาวด์",                   pn:"100000511", flammable:"nonflammable", status:"active",revDate:"9/25/2024", followUp:"9/25/2029", subject:"Lubricant", needPrint:true, halEN:false,halTH:false,hazard:"Not classified as hazardous; silicone-based compound.",                                            enLabel:"SDS - MOLYKOTE® 111 Compound (EN)",         enUrl:"https://www.dupont.com/content/dam/dupont/amer/us/en/Molykote/public/sds/en/molykote-111-compound-US-SDS-000000853096.pdf",thLabel:"SDS - MOLYKOTE® 111 Compound (ใช้ EN version)",thUrl:"https://www.dupont.com/content/dam/dupont/amer/us/en/Molykote/public/sds/en/molykote-111-compound-US-SDS-000000853096.pdf",productInfo:"https://www.dupont.com",mfr:"DuPont (Molykote)",enRevDate:"9/25/2024",enRev:"",thRevDate:"9/25/2024",thRev:"",img:"",log:[]},
+  {id:12,title:"Peanut Oil (HWST Transducer)",                  thName:"น้ำมันถั่วลิสง (สำหรับ HWST Transducer)",  pn:"",          flammable:"nonflammable", status:"active",revDate:"1/21/2021", followUp:"1/21/2026", subject:"Oil",      needPrint:false,halEN:false,halTH:false,hazard:"Food-grade oil; low hazard. Mild skin/eye irritation possible.",                                enLabel:"SDS - Peanut Oil (EN)",                   enUrl:"https://www.sigmaaldrich.com/US/en/sds/sigma/p2144",thLabel:"SDS - น้ำมันถั่วลิสง (TH)",thUrl:"",productInfo:"",mfr:"",enRevDate:"1/21/2021",enRev:"",thRevDate:"",thRev:"",img:"",log:[]},
+  {id:13,title:"PMX-200 Silicone Fluid 100 cst",                thName:"ของเหลวซิลิโคน PMX-200 ความหนืด 100 cst",  pn:"100009715", flammable:"nonflammable", status:"active",revDate:"6/23/2023", followUp:"1/17/2029", subject:"Silicone", needPrint:true, halEN:false,halTH:false,hazard:"Low hazard; silicone fluid, mild skin/eye irritant.",                                            enLabel:"SDS - XIAMETER® PMX-200 Silicone Fluid 100 cSt (EN)",enUrl:"https://www.conro.com/downloads/Manuals/XIAMETER-PMX-200100cs-Silicone-Fluid-20KG-Drum-SDS.pdf",thLabel:"SDS - XIAMETER® PMX-200 100 cSt (ใช้ EN)",thUrl:"https://www.conro.com/downloads/Manuals/XIAMETER-PMX-200100cs-Silicone-Fluid-20KG-Drum-SDS.pdf",productInfo:"https://www.dow.com",mfr:"Dow",enRevDate:"1/17/2024",enRev:"",thRevDate:"1/17/2024",thRev:"",img:"",log:[]},
+  {id:14,title:"PMX-200 Silicone Fluid 500 cst",                thName:"ของเหลวซิลิโคน PMX-200 ความหนืด 500 cst",  pn:"",          flammable:"nonflammable", status:"active",revDate:"6/23/2023", followUp:"6/23/2028", subject:"Silicone", needPrint:true, halEN:false,halTH:false,hazard:"Low hazard; silicone fluid, mild skin/eye irritant.",                                            enLabel:"SDS - XIAMETER® PMX-200 Silicone Fluid 500 cSt (EN)",enUrl:"https://gic.com/forms/msds/GIC-SDS-200-cP.pdf",thLabel:"SDS - XIAMETER® PMX-200 500 cSt (ใช้ EN)",thUrl:"https://gic.com/forms/msds/GIC-SDS-200-cP.pdf",productInfo:"https://www.dow.com",mfr:"Dow",enRevDate:"6/23/2023",enRev:"",thRevDate:"6/23/2023",thRev:"",img:"",log:[]},
+  {id:15,title:"Polydimethylsiloxane",                          thName:"โพลีไดเมทิลซิลอกเซน",                     pn:"100000816", flammable:"nonflammable", status:"active",revDate:"6/23/2023",  followUp:"1/17/2029",  subject:"Silicone", needPrint:false,halEN:false,halTH:false,hazard:"Low hazard; silicone polymer, mild irritant.",                                                       enLabel:"SDS - Polydimethylsiloxane / PDMS (EN)",          enUrl:"https://www.conro.com/downloads/Manuals/XIAMETER-PMX-200100cs-Silicone-Fluid-20KG-Drum-SDS.pdf",thLabel:"SDS - Polydimethylsiloxane / PDMS (ใช้ EN)",thUrl:"https://www.conro.com/downloads/Manuals/XIAMETER-PMX-200100cs-Silicone-Fluid-20KG-Drum-SDS.pdf",productInfo:"https://www.dow.com",mfr:"Dow",enRevDate:"1/17/2024",enRev:"",thRevDate:"1/17/2024",thRev:"",img:"",log:[]},
+  {id:16,title:"Pyroshield Aerosol (LEs100)",                   thName:"สเปรย์ไพโรชิลด์ LEs100",                  pn:"100006759", flammable:"flammable",    status:"active",revDate:"11/1/2019", followUp:"11/1/2024",subject:"Aerosol",  needPrint:false,halEN:false,halTH:false,hazard:"Flammable aerosol; lubricant spray. Eye and skin irritant.",                                     enLabel:"SDS - Pyroshield® Aerosol LEs100 (EN)",     enUrl:"https://products.lelubricants.com/media/product_files/pdfs/safety/LEs100_Safety_Data_Sheet.pdf",thLabel:"SDS - Pyroshield® Aerosol LEs100 (TH)",thUrl:"",productInfo:"https://www.lelubricants.com",mfr:"Lubrication Engineers",enRevDate:"11/1/2019",enRev:"",thRevDate:"",thRev:"",img:"",log:[]},
+  {id:17,title:"Reseal 104 HP Valve Lubricant/Sealant",         thName:"น้ำมันหล่อลื่น/ซีลวาล์ว Reseal 104 HP",   pn:"120138923", flammable:"nonflammable", status:"active",revDate:"1/1/2017",  followUp:"1/1/2022",subject:"Lubricant", needPrint:false,halEN:false,halTH:false,hazard:"Lubricant/sealant; low hazard under normal use.",                                                  enLabel:"SDS - Reseal 104 HP Valve Lubricant/Sealant (EN)",                enUrl:"https://products.lelubricants.com/media/product_files/pdfs/safety/104_Safety_Data_Sheet.pdf",thLabel:"SDS - Reseal 104 HP (TH)",thUrl:"",productInfo:"",mfr:"",enRevDate:"1/1/2017",enRev:"",thRevDate:"",thRev:"",img:"",log:[]},
+  {id:18,title:"RTV-3145 Clear – Dow Corning",                  thName:"ซิลิโคนใส RTV-3145 ของ Dow Corning",       pn:"100000153", flammable:"nonflammable", status:"active",revDate:"9/4/2020",  followUp:"4/2/2026",  subject:"Silicone", needPrint:false,halEN:false,halTH:false,hazard:"Silicone sealant; skin and eye irritant, may cause sensitization.",                               enLabel:"SDS - DOWSIL™ RTV-3145 Clear (EN)",               enUrl:"https://www.conro.com/downloads/Manuals/DOWSIL-3145-RTV-Mil-A-46146-Adhesive-Sealant-Clear_SDS.pdf",thLabel:"SDS - DOWSIL™ RTV-3145 Clear (ใช้ EN)",thUrl:"https://www.conro.com/downloads/Manuals/DOWSIL-3145-RTV-Mil-A-46146-Adhesive-Sealant-Clear_SDS.pdf",productInfo:"https://www.dow.com",mfr:"Dow Corning",enRevDate:"4/2/2021",enRev:"",thRevDate:"4/2/2021",thRev:"",img:"",log:[]},
+  {id:19,title:"SKC-S Aerosol Magnaflux",                       thName:"สเปรย์ตรวจสอบรอยร้าว SKC-S Magnaflux",    pn:"101355694", flammable:"flammable",    status:"active",revDate:"6/10/2016", followUp:"6/10/2021", subject:"Aerosol",  needPrint:false,halEN:false,halTH:false,hazard:"Flammable aerosol; NDT cleaner/remover. Skin and eye irritant.",                                enLabel:"SDS - Magnaflux SKC-S Cleaner/Remover (EN)",       enUrl:"https://www.magnaflux.com/Files/Safety-Data-Sheets/Safety-Data-Sheets---English/SKC-S-Liquid_Safety-Data-Sheet_English.pdf",thLabel:"SDS - Magnaflux SKC-S (TH)",thUrl:"https://www.magnaflux.com/Files/Safety-Data-Sheets/Safety-Data-Sheets---Thai/SKC-S-Liquid_Safety-Data-Sheet_Thai.pdf",productInfo:"https://www.magnaflux.com",mfr:"Magnaflux",enRevDate:"6/10/2016",enRev:"",thRevDate:"6/10/2016",thRev:"",img:"",log:[]},
+  {id:20,title:"SKD-S2 Aerosol Magnaflux",                      thName:"สเปรย์ตรวจสอบรอยร้าว SKD-S2 Magnaflux",   pn:"101355695", flammable:"flammable",    status:"active",revDate:"3/18/2016", followUp:"3/18/2021", subject:"Aerosol",  needPrint:false,halEN:false,halTH:false,hazard:"Flammable aerosol; NDT developer. Skin and eye irritant.",                                       enLabel:"SDS - Magnaflux SKD-S2 Developer Aerosol (EN)",      enUrl:"https://www.magnaflux.com/Files/Safety-Data-Sheets/Safety-Data-Sheets---English/SKD-S2-Aerosol_Safety-Data-Sheet_English.pdf",thLabel:"SDS - Magnaflux SKD-S2 Developer (TH)",thUrl:"https://www.magnaflux.com/Files/Safety-Data-Sheets/Safety-Data-Sheets---Thai/SKD-S2-Aerosol_Safety-Data-Sheet_Thai.pdf",productInfo:"https://www.magnaflux.com",mfr:"Magnaflux",enRevDate:"3/18/2016",enRev:"",thRevDate:"3/18/2016",thRev:"",img:"",log:[]},
+  {id:21,title:"SKL-SP2 Aerosol Magnaflux",                     thName:"สเปรย์ตรวจสอบรอยร้าว SKL-SP2 Magnaflux",  pn:"101355696", flammable:"flammable",    status:"active",revDate:"6/14/2016", followUp:"6/14/2021", subject:"Aerosol",  needPrint:false,halEN:false,halTH:false,hazard:"Flammable aerosol; NDT penetrant. Skin sensitizer, eye irritant.",                               enLabel:"SDS - Magnaflux SKL-SP2 Penetrant (EN)",     enUrl:"https://www.magnaflux.com/Files/Safety-Data-Sheets/Safety-Data-Sheets---English/SKL-SP2-Liquid_Safety-Data-Sheet_English.pdf",thLabel:"SDS - Magnaflux SKL-SP2 Penetrant (TH)",thUrl:"https://www.magnaflux.com/Files/Safety-Data-Sheets/Safety-Data-Sheets---Thai/SKL-SP2-Liquid_Safety-Data-Sheet_Thai.pdf",productInfo:"https://www.magnaflux.com",mfr:"Magnaflux",enRevDate:"6/14/2016",enRev:"",thRevDate:"6/14/2016",thRev:"",img:"",log:[]},
+  {id:22,title:"Smoke Test – 2.5 Oz",                           thName:"สเปรย์ทดสอบควัน 2.5 ออนซ์",               pn:"",          flammable:"flammable",    status:"active",revDate:"6/18/2022", followUp:"6/18/2027", subject:"Aerosol",  needPrint:false,halEN:false,halTH:false,hazard:"Pressurized aerosol; may contain irritant smoke-generating compounds.",                         enLabel:"SDS - Smoke Test 2.5 Oz Aerosol (EN)",            enUrl:"https://www.testosmokepen.com/wp-content/uploads/SDS-Smoke-Test.pdf",thLabel:"SDS - สเปรย์ทดสอบควัน 2.5 ออนซ์ (TH)",thUrl:"",productInfo:"",mfr:"",enRevDate:"6/18/2022",enRev:"",thRevDate:"",thRev:"",img:"",log:[]},
+  {id:23,title:"Solder wires: 60EN 105 Henkel (Low Temp)",      thName:"ลวดบัดกรี 60EN 105 5C Henkel (อุณหภูมิต่ำ)",pn:"",         flammable:"",             status:"active",revDate:"9/20/2017", followUp:"9/20/2022", subject:"Solder",   needPrint:false,halEN:false,halTH:false,hazard:"Solder fumes may irritate respiratory tract; flux residue may cause skin sensitization.",     enLabel:"SDS - 60EN 105 Henkel (EN) - Henkel DX",       enUrl:"https://api.henkeldx.com/v2/mysds/SafetyDataSheetSet?X-Api-Key=b0gwWC8EZlgUAd7j5GPSmNoR6uOHZ6XB&Appid=%27YPSSW_SDSUA_EXT%27&Matnr=%271266688%27&Laiso=%27EN%27&Rvlid=%27US%27&Dmskey=%27%27",thLabel:"SDS - 60EN 105 Henkel (TH) - Henkel DX",thUrl:"https://api.henkeldx.com/v2/mysds/SafetyDataSheetSet?X-Api-Key=b0gwWC8EZlgUAd7j5GPSmNoR6uOHZ6XB&Appid=%27YPSSW_SDSUA_EXT%27&Matnr=%271266688%27&Laiso=%27TH%27&Rvlid=%27US%27&Dmskey=%27%27",productInfo:"https://www.henkel.com",mfr:"Henkel",enRevDate:"9/20/2017",enRev:"",thRevDate:"9/20/2017",thRev:"",img:"",log:[]},
+  {id:24,title:"Solder wires: 60EN CRYSTAL 400 Henkel (Low Temp)",thName:"ลวดบัดกรี 60EN CRYSTAL 400 5C Henkel (อุณหภูมิต่ำ)",pn:"",flammable:"",            status:"active",revDate:"4/6/2022",  followUp:"4/6/2027",  subject:"Solder",   needPrint:false,halEN:false,halTH:false,hazard:"Solder fumes may irritate respiratory tract; flux residue may cause skin sensitization.",     enLabel:"SDS - 60EN CRYSTAL 400 Henkel (EN) - Henkel DX",enUrl:"https://api.henkeldx.com/v2/mysds/SafetyDataSheetSet?X-Api-Key=b0gwWC8EZlgUAd7j5GPSmNoR6uOHZ6XB&Appid=%27YPSSW_SDSUA_EXT%27&Matnr=%271266687%27&Laiso=%27EN%27&Rvlid=%27US%27&Dmskey=%27%27",thLabel:"SDS - 60EN CRYSTAL 400 Henkel (TH) - Henkel DX",thUrl:"https://api.henkeldx.com/v2/mysds/SafetyDataSheetSet?X-Api-Key=b0gwWC8EZlgUAd7j5GPSmNoR6uOHZ6XB&Appid=%27YPSSW_SDSUA_EXT%27&Matnr=%271266687%27&Laiso=%27TH%27&Rvlid=%27US%27&Dmskey=%27%27",productInfo:"https://www.henkel.com",mfr:"Henkel",enRevDate:"4/6/2022",enRev:"",thRevDate:"4/6/2022",thRev:"",img:"",log:[]},
+  {id:25,title:"Solder wires: Flux-Core Wire",                  thName:"ลวดบัดกรีชนิดมีฟลักซ์ในแกน",              pn:"",          flammable:"",             status:"active",revDate:"5/17/2021", followUp:"5/17/2026", subject:"Solder",   needPrint:false,halEN:false,halTH:false,hazard:"Solder fumes may irritate respiratory tract; rosin flux may cause sensitization.",              enLabel:"SDS - Flux-Core Solder Wire (EN)",         enUrl:"https://cdn11.bigcommerce.com/s-jifykode7m/product_images/uploaded_images/msds/SGP101402.pdf",thLabel:"SDS - ลวดบัดกรีฟลักซ์แกนใน (TH)",thUrl:"",productInfo:"",mfr:"",enRevDate:"5/17/2021",enRev:"",thRevDate:"",thRev:"",img:"",log:[]},
+  {id:26,title:"Solder wires: Loctite 366 HMP 5C 0.71mm",       thName:"ลวดบัดกรี Loctite 366 HMP 5C 0.71 มม.",    pn:"",          flammable:"",             status:"active",revDate:"4/24/2019", followUp:"4/24/2024", subject:"Solder",   needPrint:false,halEN:false,halTH:false,hazard:"Solder fumes; flux residue irritant. Lead-free formulation.",                                   enLabel:"SDS - Loctite 366 HMP (EN) - Henkel DX",       enUrl:"https://api.henkeldx.com/v2/mysds/SafetyDataSheetSet?X-Api-Key=b0gwWC8EZlgUAd7j5GPSmNoR6uOHZ6XB&Appid=%27YPSSW_SDSUA_EXT%27&Matnr=%271370416%27&Laiso=%27EN%27&Rvlid=%27US%27&Dmskey=%27%27",thLabel:"SDS - Loctite 366 HMP (TH) - Henkel DX",thUrl:"https://api.henkeldx.com/v2/mysds/SafetyDataSheetSet?X-Api-Key=b0gwWC8EZlgUAd7j5GPSmNoR6uOHZ6XB&Appid=%27YPSSW_SDSUA_EXT%27&Matnr=%271370416%27&Laiso=%27TH%27&Rvlid=%27US%27&Dmskey=%27%27",productInfo:"https://www.henkel.com",mfr:"Henkel (Loctite)",enRevDate:"4/24/2019",enRev:"",thRevDate:"4/24/2019",thRev:"",img:"",log:[]},
+  {id:27,title:"Solder wires: Multicomp (Sondex)",              thName:"ลวดบัดกรี Multicomp (Sondex)",             pn:"",          flammable:"",             status:"active",revDate:"8/25/2021", followUp:"8/25/2026", subject:"Solder",   needPrint:false,halEN:false,halTH:false,hazard:"Low hazard under normal use; fumes may irritate respiratory tract.",                             enLabel:"SDS - Solder Wire Multicomp (Sondex) (EN)",     enUrl:"https://docs.rs-online.com/1ef0/A700000007472490.pdf",thLabel:"SDS - ลวดบัดกรี Multicomp Sondex (TH)",thUrl:"",productInfo:"",mfr:"",enRevDate:"8/25/2021",enRev:"",thRevDate:"",thRev:"",img:"",log:[]},
+  {id:28,title:"Solder wires: RS-60/40 Water Soluble",          thName:"ลวดบัดกรี RS-60/40 แบบละลายน้ำได้",        pn:"",          flammable:"",             status:"active",revDate:"",          followUp:"",          subject:"Solder",   needPrint:false,halEN:false,halTH:false,hazard:"Contains lead; toxic if ingested. Fumes irritate respiratory tract.",                           enLabel:"SDS - Solder Wire RS-60/40 Water Soluble (EN)",              enUrl:"https://docs.rs-online.com/aa68/A700000007472492.pdf",thLabel:"SDS - ลวดบัดกรี RS-60/40 (TH)",thUrl:"",productInfo:"",mfr:"",enRevDate:"",enRev:"",thRevDate:"",thRev:"",img:"",log:[]},
+  {id:29,title:"Solder wires: SN100C Lead-Free Solder Bar",     thName:"ลวดบัดกรี SN100C ปลอดตะกั่ว",             pn:"",          flammable:"",             status:"active",revDate:"",          followUp:"",          subject:"Solder",   needPrint:false,halEN:false,halTH:false,hazard:"Lead-free; low hazard. Fumes may irritate at elevated temperatures.",                           enLabel:"SDS - SN100C Lead-Free Solder Bar (EN)",       enUrl:"https://www.nihon-superior.co.jp/en/products/sn100c/sds/SN100C_SDS_EN.pdf",thLabel:"SDS - SN100C ปลอดตะกั่ว (TH)",thUrl:"",productInfo:"",mfr:"",enRevDate:"",enRev:"",thRevDate:"",thRev:"",img:"",log:[]},
+  {id:30,title:"Solder wires: Weller SAC LO 0.5mm 500g",        thName:"ลวดบัดกรี Weller SAC LO 0.5 มม. 500 กรัม", pn:"",          flammable:"",             status:"active",revDate:"6/22/2022", followUp:"6/22/2027", subject:"Solder",   needPrint:false,halEN:false,halTH:false,hazard:"Lead-free solder; fumes may irritate respiratory tract.",                                        enLabel:"SDS - Weller SAC LO 0.5mm Solder Wire (EN)",          enUrl:"https://www.weller-tools.com/res/sds/T0051389799_SDS_EN_WE_T0051389799N.pdf",thLabel:"SDS - ลวดบัดกรี Weller SAC LO (TH)",thUrl:"",productInfo:"https://www.weller-tools.com",mfr:"Weller",enRevDate:"6/22/2022",enRev:"",thRevDate:"",thRev:"",img:"",log:[]},
+  {id:31,title:"SP 400 Aerosol",                                thName:"สเปรย์ SP 400",                            pn:"100037811", flammable:"flammable",    status:"active",revDate:"5/23/2022", followUp:"5/23/2027", subject:"Aerosol",  needPrint:false,halEN:false,halTH:false,hazard:"Flammable aerosol; skin and eye irritant.",                                                      enLabel:"SDS - SP 400 Aerosol (EN)",               enUrl:"https://www.ambersil.com/media/1012/sp400-sds.pdf",thLabel:"SDS - สเปรย์ SP 400 (TH)",thUrl:"",productInfo:"",mfr:"",enRevDate:"5/23/2022",enRev:"",thRevDate:"",thRev:"",img:"",log:[]},
+  {id:32,title:"STP Oil Treatment 24/450 ml",                   thName:"น้ำยาปรับปรุงคุณภาพน้ำมัน STP 24/450 มล.", pn:"",          flammable:"nonflammable", status:"active",revDate:"11/18/2020",followUp:"11/18/2025",subject:"Oil",      needPrint:false,halEN:false,halTH:false,hazard:"Low hazard; petroleum-based oil treatment. Mild skin irritant.",                                enLabel:"SDS - STP Oil Treatment 24/450ml (EN)",             enUrl:"https://www.stp.com/content/dam/stp/content/documents/sds/STP-Oil-Treatment-SDS.pdf",thLabel:"SDS - STP Oil Treatment (TH)",thUrl:"",productInfo:"https://www.stp.com",mfr:"STP",enRevDate:"11/18/2020",enRev:"",thRevDate:"",thRev:"",img:"",log:[]},
+  {id:33,title:"SYLGARD™ 184 Silicone Elastomer Base",          thName:"ซิลิโคนอีลาสโตเมอร์ SYLGARD™ 184",        pn:"",          flammable:"nonflammable", status:"active",revDate:"",          followUp:"5/9/2010",          subject:"Silicone", needPrint:false,halEN:false,halTH:false,hazard:"Silicone elastomer; low hazard. Curing agent may cause sensitization.",                          enLabel:"SDS - SYLGARD™ 184 Silicone Elastomer Base (EN)",             enUrl:"https://nrf.aux.eng.ufl.edu/_files/msds/2/Sylgard%20184.pdf",thLabel:"SDS - SYLGARD™ 184 (ใช้ EN)",thUrl:"https://nrf.aux.eng.ufl.edu/_files/msds/2/Sylgard%20184.pdf",productInfo:"",mfr:"",enRevDate:"5/9/2005",enRev:"",thRevDate:"5/9/2005",thRev:"",img:"",log:[]},
+  {id:34,title:"Thermal Cote I",                                thName:"เทอร์มอลโค้ท I",                           pn:"100124429", flammable:"nonflammable", status:"active",revDate:"7/30/2019", followUp:"7/30/2024", subject:"Other",    needPrint:true, halEN:false,halTH:false,hazard:"Thermal compound; low hazard. Mild skin and eye irritant.",                                      enLabel:"SDS - Thermal Cote I Thermal Compound (EN)",               enUrl:"https://msdsdigital.com/thermal-cote-i-sds",thLabel:"SDS - Thermal Cote I (TH)",thUrl:"",productInfo:"",mfr:"",enRevDate:"7/30/2019",enRev:"",thRevDate:"",thRev:"",img:"",log:[]},
+  {id:35,title:"Toluene",                                       thName:"โทลูอีน",                                  pn:"",          flammable:"flammable",    status:"active",revDate:"1/20/2024",  followUp:"1/20/2029", subject:"Solvent",  needPrint:true, halEN:false,halTH:false,hazard:"Highly flammable, reproductive toxicity, CNS depressant, aspiration hazard.",                  enLabel:"SDS - Toluene (EN)",                      enUrl:"https://www.sigmaaldrich.com/GB/en/sds/sial/244511",thLabel:"SDS - โทลูอีน (TH)",thUrl:"https://www.sigmaaldrich.com/TH/th/sds/sial/244511",productInfo:"https://www.sigmaaldrich.com",mfr:"Sigma-Aldrich",enRevDate:"1/20/2024",enRev:"",thRevDate:"1/20/2024",thRev:"",img:"",log:[]},
+  {id:36,title:"Triethylene Glycol",                            thName:"ไตรเอทิลีนไกลคอล",                        pn:"",          flammable:"nonflammable", status:"active",revDate:"7/1/2022",  followUp:"10/27/2027", subject:"Solvent",  needPrint:true, halEN:false,halTH:false,hazard:"Generally not classified as hazardous; may cause mild irritation.",                              enLabel:"SDS - Triethylene Glycol (EN)",            enUrl:"https://www.sigmaaldrich.com/GB/en/sds/sial/t59455",thLabel:"SDS - ไตรเอทิลีนไกลคอล (TH)",thUrl:"https://productsandsolutions.pttgcgroup.com/customer-support/files/TRIETHYLENE-GLYCOL-SAFETY-DATA-SHEET-20221027145001.pdf",productInfo:"https://www.sigmaaldrich.com",mfr:"Sigma-Aldrich",enRevDate:"7/1/2022",enRev:"",thRevDate:"10/27/2022",thRev:"",img:"",log:[]},
+  {id:37,title:"Turbo Oil 2380 – Eastman",                      thName:"น้ำมันเทอร์โบ 2380 ของ Eastman",           pn:"100121475", flammable:"nonflammable", status:"active",revDate:"4/7/2025",  followUp:"1/7/2026",  subject:"Oil",      needPrint:true, halEN:true, halTH:true, hazard:"Aviation turbine oil; refer to Eastman SDS. Skin and eye irritant.",                           enLabel:"SDS - Eastman™ Turbo Oil 2380 (EN)",        enUrl:"https://www.aerospheres.com/Downloads/SDS/Eastman_Turbo_Oil_Bptio_Eastman_2380_Safety_Data_Sheet.pdf",thLabel:"SDS - Eastman Turbo Oil 2380 (TH)",thUrl:"",productInfo:"https://www.eastman.com",mfr:"Eastman",enRevDate:"1/7/2021",enRev:"",thRevDate:"",thRev:"",img:"",log:[]},
+  {id:38,title:"Univis Oil HVI DH",                             thName:"น้ำมัน Univis HVI DH",                     pn:"100010553", flammable:"nonflammable", status:"active",revDate:"3/17/2015", followUp:"3/17/2020", subject:"Oil",      needPrint:false,halEN:false,halTH:false,hazard:"Hydraulic oil; low hazard. Prolonged skin contact may cause dermatitis.",                         enLabel:"SDS - Univis Oil HVI DH (EN)",            enUrl:"https://avepetroleum.com/uploads/msds_docs/UNIVIS-HVI-26-msds.pdf",thLabel:"SDS - Univis Oil HVI DH (TH) - ExxonMobil PSIMS",thUrl:"https://www.msds.exxonmobil.com/psims/psims.aspx",productInfo:"",mfr:"",enRevDate:"3/17/2015",enRev:"",thRevDate:"",thRev:"",img:"",log:[]},
+  {id:39,title:"USPI 50EP Grease",                              thName:"จาระบี USPI 50EP",                         pn:"100124501", flammable:"nonflammable", status:"active",revDate:"1/22/2020", followUp:"1/21/2025", subject:"Lubricant",needPrint:true, halEN:false,halTH:false,hazard:"Grease; low hazard. Mild skin and eye irritant.",                                                   enLabel:"SDS - USPI 50EP Grease (EN)",             enUrl:"https://products.lelubricants.com/media/product_files/pdfs/safety/USPI_50EP_Safety_Data_Sheet.pdf",thLabel:"SDS - USPI 50EP Grease (TH)",thUrl:"",productInfo:"",mfr:"",enRevDate:"",enRev:"",thRevDate:"",thRev:"",img:"",log:[]},
+  {id:40,title:"WD-40 Aerosol",                                 thName:"สเปรย์ WD-40",                             pn:"",          flammable:"flammable",    status:"active",revDate:"5/5/2025",  followUp:"5/5/2030",  subject:"Aerosol",  needPrint:true, halEN:false,halTH:false,hazard:"Extremely flammable aerosol, aspiration hazard.",                                               enLabel:"SDS - WD-40® Multi-Use Product Aerosol (EN)",                enUrl:"https://files.wd40.com/pdf/sds/mup/wd-40-multi-use-product-aerosol-low-voc-sds-us-ghs.pdf",thLabel:"SDS - WD-40® ผลิตภัณฑ์อเนกประสงค์ สเปรย์ (TH)",thUrl:"https://media.wd40.asia/app/uploads/2024/02/26010910/SDS_WD-40-Multi-Use-Product-Aerosol-Thailand.pdf",productInfo:"https://www.wd40.com",mfr:"WD-40 Company",enRevDate:"5/5/2025",enRev:"HCS2024",thRevDate:"2/26/2024",thRev:"",img:"",log:[]},
+  {id:41,title:"WD-40 Multi-Use Product Bulk Liquid",           thName:"น้ำมันหล่อลื่น WD-40 แบบแกลลอน",          pn:"",          flammable:"flammable",    status:"active",revDate:"5/5/2025",  followUp:"5/5/2030",  subject:"Lubricant",needPrint:true, halEN:false,halTH:false,hazard:"Extremely flammable liquid; aspiration hazard.",                                                  enLabel:"SDS - WD-40® Multi-Use Product Bulk Liquid (EN)",            enUrl:"https://files.wd40.com/pdf/sds/mup/wd-40-multi-use-product-bulk-low-voc-us-ghs.pdf",thLabel:"SDS - WD-40® ผลิตภัณฑ์อเนกประสงค์ (TH)",thUrl:"https://media.wd40.asia/app/uploads/2024/02/26010910/SDS_WD-40-Multi-Use-Product-Aerosol-Thailand.pdf",productInfo:"https://www.wd40.com",mfr:"WD-40 Company",enRevDate:"5/5/2025",enRev:"HCS2024",thRevDate:"2/26/2024",thRev:"",img:"",log:[]},
+];
+
+// ── STATE ─────────────────────────────────────────────────────
+let currentPage='dashboard';
+let nextId=42,currentFilter='all',currentView='gallery',editingId=null,editModeOn=false,pendingImg=null;
+let pendingPdf={en:null,th:null};
+let currentSubject='',currentSort='default';
+let appSettings={theme:'dark',font:'Sarabun',fontSize:14};
+const FONTS=[
+  {name:'Sarabun', sample:'Aa — Thai/EN'},
+  {name:'Prompt',  sample:'Aa — Thai Modern'},
+  {name:'Kanit',   sample:'Aa — Thai Clean'},
+  {name:'DM Sans', sample:'Aa - Product UI'},
+  {name:'Inter',   sample:'Aa - Neutral'},
+];
+const BUILT_IN_MAX_ID=41;
+
+// ── PERSIST ───────────────────────────────────────────────────
+function saveData(){try{localStorage.setItem('sds_records',JSON.stringify(records));}catch(e){}}
+function loadData(){
+  try{
+    const d=localStorage.getItem('sds_records');
+    if(d){
+      const saved=JSON.parse(d);
+      if(saved&&saved.length){
+        const m={};saved.forEach(r=>m[r.id]=r);
+        records=records.map(r=>m[r.id]?m[r.id]:r);
+        saved.forEach(r=>{if(r.id>BUILT_IN_MAX_ID)records.push(r);});
+      }
+    }
+    nextId=Math.max(...records.map(r=>r.id))+1;
+  }catch(e){}
+}
+function clearStorage(){
+  if(!confirm('Reset this workspace back to the 41 built-in SDS records?\n\nThis clears local edits, logs, images, and stored offline PDFs in this browser.'))return;
+  localStorage.removeItem('sds_records');location.reload();
+}
+function saveSettings(){try{localStorage.setItem('sds_settings',JSON.stringify(appSettings));}catch(e){}}
+function loadSettings(){try{const d=localStorage.getItem('sds_settings');if(d)appSettings={...appSettings,...JSON.parse(d)};}catch(e){}}
+function saveUser(){const v=document.getElementById('settingsUsername').value.trim();try{localStorage.setItem('sds_username',v);}catch(e){}updateSidebarUser();}function loadUser(){try{const u=localStorage.getItem('sds_username');if(u&&document.getElementById('settingsUsername'))document.getElementById('settingsUsername').value=u;}catch(e){}}
+function getUser(){try{return localStorage.getItem('sds_username')||'Unknown';}catch(e){return'Unknown';}}
+let reminderSettings={emails:[],windowDays:60};
+function saveReminderSettings(){try{localStorage.setItem('sds_reminder',JSON.stringify(reminderSettings));}catch(e){}}
+function loadReminderSettings(){try{const d=localStorage.getItem('sds_reminder');if(d)reminderSettings={...reminderSettings,...JSON.parse(d)};}catch(e){}}
+
+// ── SETTINGS ─────────────────────────────────────────────────
+function applySettings(){
+  document.documentElement.setAttribute('data-theme',appSettings.theme);
+  document.documentElement.style.setProperty('--app-fontsize',appSettings.fontSize+'px');
+  const lf='https://fonts.googleapis.com/css2?family='+appSettings.font.replace(' ','+')+':wght@300;400;500;600;700&display=swap';
+  let lfEl=document.getElementById('dynamicFont');
+  if(!lfEl){lfEl=document.createElement('link');lfEl.id='dynamicFont';lfEl.rel='stylesheet';document.head.appendChild(lfEl);}
+  lfEl.href=lf;
+  document.body.style.fontFamily="'"+appSettings.font+"',sans-serif";
+}
+function setTheme(t){
+  appSettings.theme=t;
+  document.getElementById('tile-light').classList.toggle('active',t==='light');
+  document.getElementById('tile-dark').classList.toggle('active',t==='dark');
+  applySettings();saveSettings();
+}
+function changeFontSize(d){
+  appSettings.fontSize=Math.max(12,Math.min(20,appSettings.fontSize+d));
+  document.getElementById('fontsizeVal').textContent=appSettings.fontSize+'px';
+  applySettings();saveSettings();
+}
+function renderFontBtns(){
+  const c=document.getElementById('fontBtns');if(!c)return;
+  c.innerHTML=FONTS.map(f=>`<button class="font-btn${appSettings.font===f.name?' active':''}" onclick="setFont('${f.name}')">${f.name} — <span style="font-family:'${f.name}'">${f.sample}</span></button>`).join('');
+}
+function setFont(n){appSettings.font=n;renderFontBtns();applySettings();saveSettings();}
+function resetSettings(){appSettings={theme:'dark',font:'Sarabun',fontSize:14};applySettings();saveSettings();renderFontBtns();document.getElementById('fontsizeVal').textContent='14px';setTheme('dark');}
+
+// ── SETTINGS PANEL ────────────────────────────────────────────
+function openSettings(){
+  document.getElementById('settingsOverlay').classList.add('open');
+  renderFontBtns();
+  document.getElementById('fontsizeVal').textContent=appSettings.fontSize+'px';
+  document.getElementById('tile-light').classList.toggle('active',appSettings.theme==='light');
+  document.getElementById('tile-dark').classList.toggle('active',appSettings.theme==='dark');
+  loadUser();renderEmailTags();renderReminderPreview();updateStorageInfo();
+}
+function closeSettings(){document.getElementById('settingsOverlay').classList.remove('open');}
+function updateStorageInfo(){
+  try{
+    const h=window.location.hostname||'local file';
+    document.getElementById('storageLocation').textContent=(h==='127.0.0.1'||h==='')?'This computer (local file)':'Browser on: '+h;
+    const raw=localStorage.getItem('sds_records')||'[]';
+    const recs=JSON.parse(raw);
+    const pdfCount=recs.filter(r=>r.enPdf||r.thPdf).length;
+    const enPdfCount=recs.filter(r=>r.enPdf).length;
+    const thPdfCount=recs.filter(r=>r.thPdf).length;
+    document.getElementById('storageCount').textContent=recs.length+' saved ('+records.length+' total loaded)';
+    const kb=(new Blob([raw]).size/1024).toFixed(1);
+    document.getElementById('storageSize').textContent=kb+' KB total ('+pdfCount+' records with offline PDFs: '+enPdfCount+' EN, '+thPdfCount+' TH)';
+  }catch(e){}
+}
+
+// ── EMAIL REMINDER ────────────────────────────────────────────
+function renderEmailTags(){
+  const c=document.getElementById('emailTags');if(!c)return;
+  const inp=document.getElementById('emailInlineInput');
+  c.innerHTML='';
+  reminderSettings.emails.forEach((e,i)=>{
+    const t=document.createElement('span');t.className='email-tag';
+    t.innerHTML=e+' <span class="email-tag-remove" onclick="removeEmail('+i+')">✕</span>';
+    c.appendChild(t);
+  });
+  c.appendChild(inp);
+}
+function handleEmailKey(e){
+  if(e.key==='Enter'||e.key===','){
+    e.preventDefault();
+    const v=e.target.value.trim().replace(',','');
+    if(v&&v.includes('@')){reminderSettings.emails.push(v);e.target.value='';saveReminderSettings();renderEmailTags();renderReminderPreview();}
+  }
+}
+function removeEmail(i){reminderSettings.emails.splice(i,1);saveReminderSettings();renderEmailTags();renderReminderPreview();}
+function renderReminderPreview(){
+  const c=document.getElementById('reminderPreview');if(!c)return;
+  const days=parseInt(document.getElementById('reminderDays')?.value||60);
+  const cutoff=new Date();cutoff.setDate(cutoff.getDate()+days);
+  const due=records.filter(r=>{if(!r.followUp)return false;const d=new Date(r.followUp);return !isNaN(d)&&d<=cutoff;});
+  if(!due.length){c.textContent='No review dates landing in the next '+days+' days.';return;}
+  c.innerHTML='<strong>Upcoming review window ('+due.length+'):</strong><br>'+due.map(r=>'� '+r.title+' - '+r.followUp).join('<br>');
+}
+function sendReminder(){
+  const days=parseInt(document.getElementById('reminderDays')?.value||60);
+  const cutoff=new Date();cutoff.setDate(cutoff.getDate()+days);
+  const due=records.filter(r=>{if(!r.followUp)return false;const d=new Date(r.followUp);return !isNaN(d)&&d<=cutoff;});
+  if(!reminderSettings.emails.length){showToast('Add at least one recipient before sending a reminder.','warning');return;}
+  const to=reminderSettings.emails.join(',');
+  const subj=encodeURIComponent('SDS review window - '+due.length+' record(s) coming due');
+  const body=encodeURIComponent('The following SDS records are due for review within '+days+' days:\n\n'+due.map(r=>'� '+r.title+' (Follow-up: '+r.followUp+')').join('\n')+'\n\nPlease review and update the vault.');
+  window.location.href='mailto:'+to+'?subject='+subj+'&body='+body;
+}
+function sendTestEmail(){
+  if(!reminderSettings.emails.length){showToast('Add at least one recipient before sending a test email.','warning');return;}
+  const to=reminderSettings.emails.join(',');
+  window.location.href='mailto:'+to+'?subject='+encodeURIComponent('[Test] SDS Vault reminder')+'&body='+encodeURIComponent('This is a test email from the SDS Vault workspace.');
+}
+function renderReminderStatBox(){
+  const days=parseInt(reminderSettings.windowDays||60);
+  const cutoff=new Date();cutoff.setDate(cutoff.getDate()+days);
+  const due=records.filter(r=>{if(!r.followUp)return false;const d=new Date(r.followUp);return !isNaN(d)&&d<=cutoff;});
+  const dot=document.getElementById('notifDot');
+  if(dot)dot.style.display=due.length?'block':'none';
+}
+
+// ── HELPERS ───────────────────────────────────────────────────
+function isOverdue(ds){if(!ds)return false;const d=new Date(ds);return !isNaN(d)&&d<new Date();}
+function hasRealUrl(url){return url&&url.trim()!==''&&url.trim()!=='#';}
+function ts(){return new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}
+
+// ── SORT ──────────────────────────────────────────────────────
+function setSort(val){
+  currentSort=val;
+  document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sort'+val.charAt(0).toUpperCase()+val.slice(1)).classList.add('active');
+  const ind=document.getElementById('sortIndicator');
+  if(ind)ind.textContent=val==='az'?'Sorted A → Z':val==='za'?'Sorted Z → A':'Default order';
+  renderView();
+}
+
+function getSortedRecords(arr){
+  if(currentSort==='az') return [...arr].sort((a,b)=>a.title.localeCompare(b.title));
+  if(currentSort==='za') return [...arr].sort((a,b)=>b.title.localeCompare(a.title));
+  return arr;
+}
+
+// ── FILTER ────────────────────────────────────────────────────
+function setFilter(f,el){
+  currentFilter=f;
+  currentSubject=''; // clear category filter when switching SDS filter
+  renderView();
+}
+function setSubject(val){
+  currentSubject=val;
+  // Make sure we're on a list page, not dashboard
+  if(currentPage==='dashboard'){
+    currentPage=val?'cat-'+val:'cat-all';
+  }
+  const ab=document.querySelector('.action-bar');
+  if(ab)ab.style.display='flex';
+  renderView();
+}
+function filteredRecords(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  let arr=records.filter(r=>{
+    const mq=!q||r.title.toLowerCase().includes(q)||(r.hazard&&r.hazard.toLowerCase().includes(q))||(r.subject&&r.subject.toLowerCase().includes(q))||(r.thName&&r.thName.toLowerCase().includes(q));
+    let mf=true;
+    if(currentFilter==='flammable')mf=r.flammable==='flammable';
+    if(currentFilter==='nonflammable')mf=r.flammable==='nonflammable';
+    if(currentFilter==='active')mf=r.status==='active';
+    if(currentFilter==='inactive')mf=r.status==='inactive';
+    if(currentFilter==='overdue')mf=isOverdue(r.followUp);
+    const ms=!currentSubject||r.subject===currentSubject;
+    return mq&&mf&&ms;
+  });
+  return getSortedRecords(arr);
+}
+
+// ── STATS ─────────────────────────────────────────────────────
+function renderStats(){
+  const total=records.length,flam=records.filter(r=>r.flammable==='flammable').length;
+  const nflam=records.filter(r=>r.flammable==='nonflammable').length;
+  const active=records.filter(r=>r.status==='active').length,inactive=records.filter(r=>r.status==='inactive').length;
+  const overdue=records.filter(r=>isOverdue(r.followUp)).length;
+  const stats=[
+    {icon:'??',num:total,label:'Total Records',filter:'all',cls:''},
+    {icon:'🔥',num:flam,label:'Flammable',filter:'flammable',cls:''},
+    {icon:'🟢',num:nflam,label:'Non-Flammable',filter:'nonflammable',cls:''},
+    {icon:'✅',num:active,label:'Active',filter:'active',cls:''},
+    {icon:'⏸',num:inactive,label:'Inactive',filter:'inactive',cls:''},
+    {icon:'!',num:overdue,label:'Needs Review',filter:'overdue',cls:'overdue'+(overdue===0?' overdue-zero':'')},
+  ];
+  document.getElementById('statsBar').innerHTML=stats.map(s=>
+    `<div class="stat-card ${s.cls}" onclick="setStatFilter('${s.filter}')">
+      <span class="stat-icon">${s.icon}</span>
+      <div><div class="stat-num">${s.num}</div><div class="stat-label">${s.label}</div></div>
+    </div>`).join('');
+}
+function setStatFilter(f){
+  const pageMap={all:'all',flammable:'flammable',nonflammable:'nonflammable',active:'all',inactive:'all',overdue:'overdue'};
+  currentFilter=f;
+  currentSubject='';
+  setPage(pageMap[f]||'all');
+}
+
+// ── SUBJECT STYLES ────────────────────────────────────────────
+const SUBJECT_STYLES={
+  'Oil':      'color:#0055A4;background:#EFF6FF;border:1px solid #BFDBFE',
+  'Solder':   'color:#166534;background:#F0FDF4;border:1px solid #BBF7D0',
+  'Lubricant':'color:#7B4F00;background:#FFF7ED;border:1px solid #FED7AA',
+  'Adhesive': 'color:#6A1B9A;background:#F5F3FF;border:1px solid #DDD6FE',
+  'Cleaner':  'color:#065F46;background:#ECFDF5;border:1px solid #A7F3D0',
+  'Aerosol':  'color:#C2410C;background:#FFF7ED;border:1px solid #FDBA74',
+  'Silicone': 'color:#1D4ED8;background:#EFF6FF;border:1px solid #BFDBFE',
+  'Solvent':  'color:#B91C1C;background:#FFF1F2;border:1px solid #FECDD3',
+  'Other':    'color:var(--text-secondary);background:var(--bg-page);border:1px solid var(--border)',
+};
+function badgesHTML(r){
+  let b='';
+  if(r.flammable==='flammable')b+=`<span class="badge badge-flammable">🔥 Flammable</span>`;
+  if(r.flammable==='nonflammable')b+=`<span class="badge badge-nonflammable">✓ Non-Flammable</span>`;
+  b+=r.status==='active'?`<span class="badge badge-active">Active</span>`:`<span class="badge badge-inactive">Inactive</span>`;
+  if(isOverdue(r.followUp))b+=`<span class="badge badge-overdue">⚠ Overdue</span>`;
+  if(r.subject){const sc=SUBJECT_STYLES[r.subject]||SUBJECT_STYLES['Other'];b+=`<span class="badge" style="${sc}">${r.subject}</span>`;}
+  return b;
+}
+function linksHTML(r){
+  let l='';
+  const enRevTip = r.enRevDate ? ` Rev: ${r.enRevDate}${r.enRev?' (v'+r.enRev+')':''}` : '';
+  const thRevTip = r.thRevDate ? ` Rev: ${r.thRevDate}${r.thRev?' (v'+r.thRev+')':''}` : '';
+  const enLabel  = (r.enLabel||(r.title?'SDS - '+r.title:'SDS Document')) + enRevTip;
+  const thLabel  = (r.thLabel||(r.title?'SDS - '+r.title+' (TH)':'SDS (TH)')) + thRevTip;
+  const enBadge  = r.enRevDate ? `<span style="font-size:9px;opacity:0.8;margin-left:2px;">${r.enRevDate}</span>` : '';
+  const thBadge  = r.thRevDate ? `<span style="font-size:9px;opacity:0.8;margin-left:2px;">${r.thRevDate}</span>` : '';
+  if(hasRealUrl(r.enUrl)){
+    l+=`<a class="sds-link sds-en" href="${r.enUrl}" target="_blank" title="${enLabel}">🔗 EN ${enBadge}</a>`;
+  } else {
+    l+=`<button class="sds-link sds-disabled" title="No EN SDS link" onclick="showToast('⚠ No EN SDS link — add SharePoint URL or upload offline PDF via ✎ Edit.','warning')">🔗 EN ${enBadge}</button>`;
+  }
+  if(r.enPdf){
+    l+=`<button class="sds-link sds-offline" onclick="openOfflinePdfById(${r.id},'en')" title="Open stored offline EN PDF">📄 EN Offline</button>`;
+  }
+  if(hasRealUrl(r.thUrl)){
+    l+=`<a class="sds-link sds-th" href="${r.thUrl}" target="_blank" title="${thLabel}">🔗 TH ${thBadge}</a>`;
+  } else {
+    l+=`<button class="sds-link sds-disabled" title="No TH SDS link" onclick="showToast('⚠ No TH SDS link — add SharePoint URL or upload offline PDF via ✎ Edit.','warning')">🔗 TH ${thBadge}</button>`;
+  }
+  if(r.thPdf){
+    l+=`<button class="sds-link sds-offline" onclick="openOfflinePdfById(${r.id},'th')" title="Open stored offline TH PDF">📄 TH Offline</button>`;
+  }
+  return l;
+}
+function editBtnsHTML(r){
+  if(!editModeOn)return'';
+  return`<button class="btn-edit-card" onclick="openEditModal(${r.id})">✎ Edit</button>
+         <button class="btn-delete-card" onclick="deleteRecord(${r.id})">🗑</button>`;
+}
+function logBtnHTML(r){
+  const cnt=(r.log||[]).length;
+  return`<button class="btn-log" onclick="openLogModal(${r.id})">📋 <span class="log-badge">${cnt}</span></button>`;
+}
+function imgHTML(r,size='120px'){
+  if(r.img)return`<img src="${r.img}" style="width:100%;height:${size};object-fit:contain;padding:6px;background:var(--bg-page);">`;
+  return`<div class="card-img" style="height:${size};">📦</div>`;
+}
+
+// ── RENDER ────────────────────────────────────────────────────
+function setView(v){
+  currentView=v;
+  ['gallery','tiles','list'].forEach(x=>{
+    document.getElementById('vbtn-'+x).classList.toggle('active',x===v);
+  });
+  renderView();
+}
+function renderView(){
+  const mc=document.getElementById('mainContent');
+  if(currentPage==='dashboard'){
+    document.getElementById('countDisplay').textContent='—';
+    document.getElementById('totalDisplay').textContent=records.length;
+    renderStats();
+    mc.innerHTML=renderDashboard();
+    updateOverdueBadge();
+    return;
+  }
+  const fr=filteredRecords();
+  document.getElementById('countDisplay').textContent=fr.length;
+  document.getElementById('totalDisplay').textContent=records.length;
+  renderStats();
+  if(currentView==='gallery')mc.innerHTML=renderGallery(fr);
+  else if(currentView==='tiles')mc.innerHTML=renderTiles(fr);
+  else mc.innerHTML=renderList(fr);
+  updateOverdueBadge();
+}
+
+function renderDashboard(){
+  const total=records.length;
+  const flam=records.filter(r=>r.flammable==='flammable').length;
+  const nflam=records.filter(r=>r.flammable==='nonflammable').length;
+  const active=records.filter(r=>r.status==='active').length;
+  const inactive=records.filter(r=>r.status==='inactive').length;
+  const overdue=records.filter(r=>isOverdue(r.followUp)).length;
+  const withEnPdf=records.filter(r=>r.enPdf).length;
+  const withThPdf=records.filter(r=>r.thPdf).length;
+  const withEnUrl=records.filter(r=>hasRealUrl(r.enUrl)).length;
+  const withThUrl=records.filter(r=>hasRealUrl(r.thUrl)).length;
+
+  // Category breakdown
+  const cats={};
+  records.forEach(r=>{const c=r.subject||'Other';cats[c]=(cats[c]||0)+1;});
+  const catRows=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+
+  // Overdue items list
+  const overdueList=records.filter(r=>isOverdue(r.followUp)).sort((a,b)=>new Date(a.followUp)-new Date(b.followUp));
+
+  // Soon due (next 90 days, not yet overdue)
+  const soon=new Date();soon.setDate(soon.getDate()+90);
+  const soonList=records.filter(r=>{
+    if(!r.followUp||isOverdue(r.followUp))return false;
+    const d=new Date(r.followUp);return !isNaN(d)&&d<=soon;
+  }).sort((a,b)=>new Date(a.followUp)-new Date(b.followUp));
+
+  const subjectStyle=s=>({
+    'Aerosol':'background:#FFF7ED;color:#C2410C;','Oil':'background:#EFF6FF;color:#0055A4;',
+    'Lubricant':'background:#FFF7ED;color:#7B4F00;','Solder':'background:#F0FDF4;color:#166534;',
+    'Silicone':'background:#EFF6FF;color:#1D4ED8;','Solvent':'background:#FFF1F2;color:#B91C1C;',
+    'Cleaner':'background:#ECFDF5;color:#065F46;','Adhesive':'background:#F5F3FF;color:#6A1B9A;',
+    'Other':'background:#F3F4F6;color:#6B7280;',
+  }[s]||'background:#F3F4F6;color:#6B7280;');
+
+  return`
+  <div style="padding:24px;max-width:1100px;">
+    <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">SDS Vault Overview</h2>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:20px;">A quick pulse on coverage, upcoming reviews, and record health.</p>
+
+    <!-- KPI CARDS -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px;">
+      ${kpi('??','Total Records',total,'var(--text-primary)','setPage(\'all\');setFilter(\'all\',null)')}
+      ${kpi('??','Flammable',flam,'#ff7a5c','setPage(\'flammable\');setFilter(\'flammable\',null)')}
+      ${kpi('?','Non-Flammable',nflam,'#4ddc9a','setPage(\'nonflammable\');setFilter(\'nonflammable\',null)')}
+      ${kpi('?','Active',active,'#4dd8e8','setPage(\'all\');setFilter(\'active\',null)')}
+      ${kpi('?','Inactive',inactive,'#7a7a8d','setPage(\'all\');setFilter(\'inactive\',null)')}
+      ${kpi('!','Needs Review',overdue,'#ff5f7a','setPage(\'overdue\');setFilter(\'overdue\',null)',overdue>0)}
+    </div>
+
+    <!-- TWO COLUMN: Category + SDS Link Coverage -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+
+      <!-- CATEGORY BREAKDOWN -->
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;">Category Mix</div>
+        ${catRows.map(([cat,count])=>`
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;" onclick="setPage('cat-${cat}');setSubject('${cat}')">
+            <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;${subjectStyle(cat)}">${cat}</span>
+            <div style="flex:1;background:var(--bg-page);border-radius:4px;height:6px;overflow:hidden;">
+              <div style="background:var(--red);height:100%;width:${Math.round(count/total*100)}%;border-radius:4px;"></div>
+            </div>
+            <span style="font-size:12px;font-weight:600;color:var(--text-primary);min-width:24px;text-align:right;">${count}</span>
+          </div>`).join('')}
+      </div>
+
+      <!-- SDS LINK COVERAGE -->
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;">Coverage Snapshot</div>
+        ${coverage('EN online link',withEnUrl,total,'#4dd8e8')}
+        ${coverage('TH online link',withThUrl,total,'#ff8aa0')}
+        ${coverage('EN offline PDF',withEnPdf,total,'#4ddc9a')}
+        ${coverage('TH offline PDF',withThPdf,total,'#0D9488')}
+        <div style="margin-top:12px;font-size:11px;color:var(--text-muted);">
+          ${total-withEnUrl} records missing EN links � ${total-withThUrl} records missing TH links
+        </div>
+      </div>
+    </div>
+
+    <!-- OVERDUE + SOON DUE -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+      <!-- OVERDUE -->
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:#ff5f7a;">Needs Review Now (${overdueList.length})</div>
+        ${!overdueList.length
+          ?'<p style="font-size:12px;color:var(--text-muted);">Nothing urgent right now.</p>'
+          :overdueList.map(r=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border-light);font-size:12px;cursor:pointer;" onclick="setPage('all');setFilter('all',null);document.getElementById('searchInput').value='${r.title.replace(/'/g,"\\'")}';renderView()">
+            <span style="font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.title}</span>
+            <span style="color:#EF4444;font-weight:600;margin-left:8px;white-space:nowrap;">${r.followUp}</span>
+          </div>`).join('')}
+      </div>
+
+      <!-- SOON DUE -->
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:#ffa64d;">Coming Up in 90 Days (${soonList.length})</div>
+        ${!soonList.length
+          ?'<p style="font-size:12px;color:var(--text-muted);">The next 90 days are clear.</p>'
+          :soonList.map(r=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border-light);font-size:12px;cursor:pointer;" onclick="setPage('all');setFilter('all',null);document.getElementById('searchInput').value='${r.title.replace(/'/g,"\\'")}';renderView()">
+            <span style="font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.title}</span>
+            <span style="color:#D97706;font-weight:600;margin-left:8px;white-space:nowrap;">${r.followUp}</span>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function kpi(icon,label,val,color,onclick,alert=false){
+  return`<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:box-shadow .15s;" onclick="${onclick}" onmouseenter="this.style.boxShadow='0 4px 12px rgba(0,0,0,.1)'" onmouseleave="this.style.boxShadow=''">
+    <div style="font-size:22px;margin-bottom:6px;">${icon}</div>
+    <div style="font-size:26px;font-weight:800;color:${alert?'#EF4444':color};">${val}</div>
+    <div style="font-size:11px;color:var(--text-muted);font-weight:500;margin-top:2px;">${label}</div>
+  </div>`;
+}
+
+function coverage(label,have,total,color){
+  const pct=total?Math.round(have/total*100):0;
+  return`<div style="margin-bottom:10px;">
+    <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;">
+      <span style="color:var(--text-secondary);">${label}</span>
+      <span style="font-weight:600;">${have}/${total} <span style="color:var(--text-muted);">(${pct}%)</span></span>
+    </div>
+    <div style="background:var(--bg-page);border-radius:4px;height:6px;overflow:hidden;">
+      <div style="background:${color};height:100%;width:${pct}%;border-radius:4px;transition:width .4s;"></div>
+    </div>
+  </div>`;
+}
+
+function mfrHTML(r){
+  if(!r.mfr&&!r.productInfo)return'';
+  const name=r.mfr||'Manufacturer';
+  if(r.productInfo&&r.productInfo!=='#'){
+    return`<a href="${r.productInfo}" target="_blank" style="font-size:10px;color:var(--text-muted);text-decoration:none;display:inline-flex;align-items:center;gap:3px;" title="Visit manufacturer website">🏭 ${name} ↗</a>`;
+  }
+  return`<span style="font-size:10px;color:var(--text-muted);">🏭 ${name}</span>`;
+}
+
+function renderGallery(arr){
+  if(!arr.length)return`<div style="padding:48px 40px;text-align:center;color:var(--text-muted);">No records match this view yet.</div>`;
+  return`<div class="cards-grid">${arr.map(r=>`
+    <div class="card">
+      ${imgHTML(r,'110px')}
+      <div class="card-body">
+        <div class="card-title">${r.title}</div>
+        ${r.thName?`<div style="font-size:10px;color:var(--text-secondary);margin-bottom:2px;">${r.thName}</div>`:''}
+        ${mfrHTML(r)?`<div style="margin-bottom:4px;">${mfrHTML(r)}</div>`:''}
+        <div class="card-badges">${badgesHTML(r)}</div>
+        ${r.hazard?`<div class="card-hazard">${r.hazard}</div>`:''}
+        <div class="card-dates">
+          <div class="date-item"><div class="date-label">Rev. Date</div><div class="date-val">${r.revDate||'—'}</div></div>
+          <div class="date-item"><div class="date-label">Follow Up</div><div class="date-val ${isOverdue(r.followUp)?'overdue':''}">${r.followUp||'—'}${isOverdue(r.followUp)?' ⚠':''}</div></div>
+        </div>
+        <div class="card-links">${linksHTML(r)}</div>
+      </div>
+      <div class="card-footer">
+        <div class="card-edit-btns">${editBtnsHTML(r)}</div>
+        ${logBtnHTML(r)}
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+function renderTiles(arr){
+  if(!arr.length)return`<div style="padding:48px 40px;text-align:center;color:var(--text-muted);">No records match this view yet.</div>`;
+  return`<div class="tiles-grid">${arr.map(r=>`
+    <div class="tile">
+      <div class="tile-top">
+        <div class="tile-thumb">${r.img?`<img src="${r.img}">`:'📦'}</div>
+        <div class="tile-info">
+          <div class="tile-title">${r.title}</div>
+          ${r.thName?`<div style="font-size:10px;color:var(--text-secondary);">${r.thName}</div>`:''}
+          ${mfrHTML(r)?`<div style="margin-top:2px;">${mfrHTML(r)}</div>`:''}
+          <div class="card-badges" style="margin-top:4px;">${badgesHTML(r)}</div>
+        </div>
+      </div>
+      ${r.hazard?`<div style="font-size:10px;color:var(--text-muted);">${r.hazard}</div>`:''}
+      <div class="tile-dates">
+        <span style="font-size:10px;color:var(--text-muted);">Rev: <strong>${r.revDate||'—'}</strong></span>
+        <span style="font-size:10px;color:var(--text-muted);">Due: <strong class="${isOverdue(r.followUp)?'date-val overdue':''}">${r.followUp||'—'}${isOverdue(r.followUp)?' ⚠':''}</strong></span>
+      </div>
+      <div class="tile-bottom">
+        <div class="tile-links">${linksHTML(r)}</div>
+        ${logBtnHTML(r)}
+      </div>
+      ${editModeOn?`<div style="display:flex;gap:6px;padding-top:6px;border-top:1px solid var(--border-light);">${editBtnsHTML(r)}</div>`:''}
+    </div>`).join('')}</div>`;
+}
+
+function renderList(arr){
+  if(!arr.length)return`<div style="padding:48px 40px;text-align:center;color:var(--text-muted);">No records match this view yet.</div>`;
+  return`<div class="list-wrap"><table class="list-table">
+    <thead><tr>
+      <th class="sortable" onclick="setSort(currentSort==='az'?'za':'az')">#  Name <span class="sort-arrow"></span></th>
+      <th>Thai Name</th>
+      <th>Manufacturer</th>
+      <th>P/N</th>
+      <th>Hazard</th>
+      <th>Rev. Date</th>
+      <th>Follow Up</th>
+      <th>SDS Links</th>
+      ${editModeOn?'<th>Actions</th>':''}
+    </tr></thead>
+    <tbody>${arr.map((r,i)=>`
+      <tr>
+        <td class="td-name">${i+1}. ${r.title}</td>
+        <td class="td-th">${r.thName||'—'}</td>
+        <td style="font-size:11px;">${mfrHTML(r)||'—'}</td>
+        <td class="td-pn">${r.pn||'—'}</td>
+        <td style="font-size:11px;color:var(--text-muted);max-width:200px;">${r.hazard||'—'}</td>
+        <td class="td-date">${r.revDate||'—'}</td>
+        <td class="td-date ${isOverdue(r.followUp)?'overdue':''}">${r.followUp||'—'}${isOverdue(r.followUp)?' ⚠':''}</td>
+        <td class="td-links">${linksHTML(r)}</td>
+        ${editModeOn?`<td class="td-actions">${editBtnsHTML(r)} ${logBtnHTML(r)}</td>`:''}
+      </tr>`).join('')}
+    </tbody>
+  </table></div>`;
+}
+
+// ── EDIT MODE ─────────────────────────────────────────────────
+function toggleEditMode(){
+  editModeOn=!editModeOn;
+  document.getElementById('editToggle').classList.toggle('on',editModeOn);
+  document.getElementById('editToggle').textContent=editModeOn?'Editing On':'Edit Mode';
+  renderView();
+}
+
+// ── MODAL ─────────────────────────────────────────────────────
+function openAddModal(){
+  editingId=null;pendingImg=null;pendingPdf={en:null,th:null};
+  document.getElementById('modalTitle').textContent='Add Record';
+  ['f_title','f_thname','f_pn','f_hazard','f_revdate','f_followup','f_en_label','f_en_url','f_en_revdate','f_en_rev','f_th_label','f_th_url','f_th_revdate','f_th_rev','f_productinfo','f_mfr'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f_flammable').value='';document.getElementById('f_status').value='active';document.getElementById('f_subject').value='';
+  document.getElementById('imgPreview').style.display='none';document.getElementById('imgPlaceholder').style.display='';
+  setPdfStatus('en',null);setPdfStatus('th',null);
+  document.getElementById('editModal').classList.add('open');
+}
+function openEditModal(id){
+  const r=records.find(x=>x.id===id);if(!r)return;
+  editingId=id;pendingImg=null;pendingPdf={en:null,th:null};
+  document.getElementById('modalTitle').textContent='Edit Record';
+  document.getElementById('f_title').value=r.title||'';
+  document.getElementById('f_thname').value=r.thName||'';
+  document.getElementById('f_pn').value=r.pn||'';
+  document.getElementById('f_flammable').value=r.flammable||'';
+  document.getElementById('f_status').value=r.status||'active';
+  document.getElementById('f_subject').value=r.subject||'';
+  document.getElementById('f_hazard').value=r.hazard||'';
+  document.getElementById('f_revdate').value=r.revDate||'';
+  document.getElementById('f_followup').value=r.followUp||'';
+  document.getElementById('f_en_label').value=r.enLabel||'';
+  document.getElementById('f_en_url').value=r.enUrl||'';
+  document.getElementById('f_en_revdate').value=r.enRevDate||'';
+  document.getElementById('f_en_rev').value=r.enRev||'';
+  document.getElementById('f_th_label').value=r.thLabel||'';
+  document.getElementById('f_th_url').value=r.thUrl||'';
+  document.getElementById('f_th_revdate').value=r.thRevDate||'';
+  document.getElementById('f_th_rev').value=r.thRev||'';
+  document.getElementById('f_productinfo').value=r.productInfo||'';
+  document.getElementById('f_mfr').value=r.mfr||'';
+  if(r.img){document.getElementById('imgPreview').src=r.img;document.getElementById('imgPreview').style.display='block';document.getElementById('imgPlaceholder').style.display='none';}
+  else{document.getElementById('imgPreview').style.display='none';document.getElementById('imgPlaceholder').style.display='';}
+  setPdfStatus('en',r.enPdf||null);
+  setPdfStatus('th',r.thPdf||null);
+  document.getElementById('editModal').classList.add('open');
+}
+function closeEditModal(){document.getElementById('editModal').classList.remove('open');editingId=null;pendingImg=null;pendingPdf={en:null,th:null};}
+function handleImgUpload(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{pendingImg=ev.target.result;document.getElementById('imgPreview').src=pendingImg;document.getElementById('imgPreview').style.display='block';document.getElementById('imgPlaceholder').style.display='none';};
+  reader.readAsDataURL(file);
+}
+function clearImg(){pendingImg='';document.getElementById('imgPreview').style.display='none';document.getElementById('imgPlaceholder').style.display='';}
+function saveRecord(){
+  const title=document.getElementById('f_title').value.trim();
+  if(!title){showToast('Add a product name to save this record.','warning');return;}
+  const data={
+    title,thName:document.getElementById('f_thname').value.trim(),pn:document.getElementById('f_pn').value.trim(),
+    flammable:document.getElementById('f_flammable').value,status:document.getElementById('f_status').value,
+    subject:document.getElementById('f_subject').value,hazard:document.getElementById('f_hazard').value.trim(),
+    revDate:document.getElementById('f_revdate').value.trim(),followUp:document.getElementById('f_followup').value.trim(),
+    enLabel:document.getElementById('f_en_label').value.trim(),enUrl:document.getElementById('f_en_url').value.trim()||'#',
+    enRevDate:document.getElementById('f_en_revdate').value.trim(),enRev:document.getElementById('f_en_rev').value.trim(),
+    thLabel:document.getElementById('f_th_label').value.trim(),thUrl:document.getElementById('f_th_url').value.trim()||'',
+    thRevDate:document.getElementById('f_th_revdate').value.trim(),thRev:document.getElementById('f_th_rev').value.trim(),
+    productInfo:document.getElementById('f_productinfo').value.trim(),
+    mfr:document.getElementById('f_mfr').value.trim(),
+  };
+  if(pendingImg!==null)data.img=pendingImg;
+  if(pendingPdf.en!==null)data.enPdf=pendingPdf.en;
+  if(pendingPdf.th!==null)data.thPdf=pendingPdf.th;
+  const user=getUser();
+  if(editingId){
+    const idx=records.findIndex(x=>x.id===editingId);
+    const old=records[idx];
+    const changed=Object.keys(data).filter(k=>k!=='enPdf'&&k!=='thPdf'&&data[k]!==old[k]).map(k=>`${k}: "${old[k]}" → "${data[k]}"`);
+    if(pendingPdf.en!==null)changed.push(pendingPdf.en?'EN offline PDF: uploaded':'EN offline PDF: cleared');
+    if(pendingPdf.th!==null)changed.push(pendingPdf.th?'TH offline PDF: uploaded':'TH offline PDF: cleared');
+    records[idx]={...old,...data};
+    if(!records[idx].log)records[idx].log=[];
+    if(changed.length)records[idx].log.unshift({action:'Edited',user,time:ts(),diff:changed.join('; ')});
+    showToast('Record updated.','success');
+  } else {
+    const nr={id:nextId++,log:[],enPdf:'',thPdf:'',...data,img:pendingImg||''};
+    nr.log.unshift({action:'Added',user,time:ts(),diff:''});
+    records.push(nr);
+    showToast('New record added.','success');
+  }
+  saveData();closeEditModal();renderView();
+}
+function deleteRecord(id){
+  if(!confirm('Delete this record? This cannot be undone.'))return;
+  const r=records.find(x=>x.id===id);
+  try{const dl=JSON.parse(localStorage.getItem('sds_deleted_log')||'[]');dl.unshift({...r,deletedAt:ts(),deletedBy:getUser()});if(dl.length>100)dl.pop();localStorage.setItem('sds_deleted_log',JSON.stringify(dl));}catch(e){}
+  records=records.filter(x=>x.id!==id);
+  saveData();showToast('Record deleted.','success');renderView();
+}
+
+// ── AUDIT LOG ─────────────────────────────────────────────────
+function openLogModal(id){
+  const r=records.find(x=>x.id===id);if(!r)return;
+  document.getElementById('logModalTitle').textContent='Audit Log — '+r.title;
+  const log=r.log||[];
+  document.getElementById('logModalBody').innerHTML=!log.length?'<p style="color:var(--text-muted);font-size:12px;">No activity yet for this record.</p>':
+    log.map(e=>`<div class="log-entry log-${e.action.toLowerCase()}">
+      <strong>${e.action}</strong>
+      <div class="log-meta">👤 ${e.user} · 🕐 ${e.time}</div>
+      ${e.diff?`<div class="log-diff">${e.diff}</div>`:''}
+    </div>`).join('');
+  document.getElementById('logModal').classList.add('open');
+}
+function closeLogModal(){document.getElementById('logModal').classList.remove('open');}
+
+// ── TOAST ─────────────────────────────────────────────────────
+function showToast(msg,type='success'){
+  const wrap=document.getElementById('toastWrap');
+  const t=document.createElement('div');
+  t.className=`toast ${type}`;t.textContent=msg;
+  wrap.appendChild(t);requestAnimationFrame(()=>t.classList.add('show'));
+  setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),400);},3500);
+}
+
+// ── OFFLINE PDF ───────────────────────────────────────────────
+function setPdfStatus(lang,dataUrl){
+  const status=document.getElementById(lang+'_pdf_status');
+  const openBtn=document.getElementById(lang+'_pdf_open');
+  const clearBtn=document.getElementById(lang+'_pdf_clear');
+  const warn=document.getElementById(lang+'_pdf_warn');
+  if(!status)return;
+  if(dataUrl){
+    const kb=Math.round(dataUrl.length*0.75/1024);
+    status.className='pdf-status pdf-stored';
+    status.textContent='✅ PDF stored ('+( kb>=1024?(kb/1024).toFixed(1)+' MB':kb+' KB')+')';
+    openBtn.style.display='';clearBtn.style.display='';
+    warn.style.display=(kb>5120)?'':'none';
+  } else {
+    status.className='pdf-status pdf-missing';
+    status.textContent='No file stored';
+    openBtn.style.display='none';clearBtn.style.display='none';
+    warn.style.display='none';
+  }
+}
+function handlePdfUpload(e,lang){
+  const file=e.target.files[0];if(!file)return;
+  if(!file.type.includes('pdf')){showToast('⚠ Please upload a PDF file.','warning');return;}
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    pendingPdf[lang]=ev.target.result;
+    setPdfStatus(lang,ev.target.result);
+    showToast('📄 '+(lang==='en'?'EN':'TH')+' PDF loaded — click Save to store it.','success');
+  };
+  reader.readAsDataURL(file);
+  e.target.value='';
+}
+function clearOfflinePdf(lang){
+  pendingPdf[lang]='';
+  setPdfStatus(lang,null);
+}
+function openOfflinePdf(lang){
+  // Open from modal context (pending or existing)
+  const data=pendingPdf[lang]!==null?pendingPdf[lang]:(editingId?((records.find(x=>x.id===editingId)||{})[lang+'Pdf']||''):'');
+  if(!data){showToast('⚠ No PDF stored.','warning');return;}
+  openPdfData(data);
+}
+function openOfflinePdfById(id,lang){
+  const r=records.find(x=>x.id===id);
+  if(!r||!r[lang+'Pdf']){showToast('⚠ No offline PDF stored for this item.','warning');return;}
+  openPdfData(r[lang+'Pdf']);
+}
+function openPdfData(dataUrl){
+  const blob=dataURLtoBlob(dataUrl);
+  const url=URL.createObjectURL(blob);
+  window.open(url,'_blank');
+  setTimeout(()=>URL.revokeObjectURL(url),30000);
+}
+function dataURLtoBlob(dataUrl){
+  const[header,data]=dataUrl.split(',');
+  const mime=header.match(/:(.*?);/)[1];
+  const bin=atob(data);
+  const buf=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)buf[i]=bin.charCodeAt(i);
+  return new Blob([buf],{type:mime});
+}
+
+// ── EXPORT XLSX ───────────────────────────────────────────────
+function exportToXLSX(){
+  const b64="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";
+  const bin=atob(b64);
+  const buf=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)buf[i]=bin.charCodeAt(i);
+  const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='SDS_Lab_Sonde_SKL_List.xlsx';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  showToast('📥 Downloading SDS_Lab_Sonde_SKL_List.xlsx…','success');
+}
+
+// ── SIDEBAR ───────────────────────────────────────────────────
+let sidebarCollapsed=false;
+function toggleSidebar(){
+  sidebarCollapsed=!sidebarCollapsed;
+  document.getElementById('sidebar').classList.toggle('collapsed',sidebarCollapsed);
+  document.getElementById('appWrapper').classList.toggle('sidebar-collapsed',sidebarCollapsed);
+  try{localStorage.setItem('sds_sidebar_collapsed',sidebarCollapsed);}catch(e){}
+}
+function loadSidebarState(){
+  try{
+    const c=localStorage.getItem('sds_sidebar_collapsed');
+    const compactScreen=window.innerWidth<1200;
+    sidebarCollapsed = compactScreen && c==='true';
+    document.getElementById('sidebar').classList.toggle('collapsed',sidebarCollapsed);
+    document.getElementById('appWrapper').classList.toggle('sidebar-collapsed',sidebarCollapsed);
+    if(!compactScreen && c==='true'){
+      localStorage.setItem('sds_sidebar_collapsed','false');
+    }
+  }catch(e){}
+}
+function setPage(page){
+  currentPage=page;
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const navItems=document.querySelectorAll('.sidebar .nav-item');
+  navItems.forEach(n=>{
+    const tip=n.getAttribute('data-tip')||'';
+    const oc=n.getAttribute('onclick')||'';
+    if(page==='dashboard'&&tip==='Dashboard')n.classList.add('active');
+    else if(page==='all'&&tip==='All records')n.classList.add('active');
+    else if(page==='flammable'&&tip==='Flammable')n.classList.add('active');
+    else if(page==='nonflammable'&&tip==='Non-Flammable')n.classList.add('active');
+    else if(page==='overdue'&&tip==='Needs review')n.classList.add('active');
+    else if(page==='cat-all'&&tip==='All Categories')n.classList.add('active');
+    else if(page.startsWith('cat-')&&page!=='cat-all'&&oc.includes("setSubject('"+page.replace('cat-','')+"'"))n.classList.add('active');
+  });
+  // Show/hide action bar
+  const ab=document.querySelector('.action-bar');
+  if(ab)ab.style.display=(page==='dashboard')?'none':'flex';
+  // For non-category, non-dashboard pages: render immediately
+  // Category pages let setSubject() call renderView() right after
+  if(!page.startsWith('cat-')){
+    renderView();
+  }
+}
+function updateSidebarUser(){
+  const u=getUser();
+  const el=document.getElementById('sidebarUsername');
+  const av=document.getElementById('sidebarAvatar');
+  if(el)el.textContent=u&&u!=='Unknown'?u:'— Set name in Settings';
+  if(av)av.textContent=u&&u!=='Unknown'?u.charAt(0).toUpperCase():'?';
+}
+function updateOverdueBadge(){
+  const n=records.filter(r=>isOverdue(r.followUp)).length;
+  const b=document.getElementById('navOverdueBadge');
+  if(b){b.textContent=n;b.style.display=n?'':'none';}
+}
+
+// ── KEYBOARD ──────────────────────────────────────────────────
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeEditModal();closeLogModal();closeSettings();}});
+
+// ── INIT ─────────────────────────────────────────────────────
+loadData();loadSettings();loadReminderSettings();loadUser();applySettings();
+loadSidebarState();updateSidebarUser();
+setPage('dashboard');
+setTimeout(()=>{renderReminderStatBox();updateOverdueBadge();},100);
+</script>
+</body>
+</html>
+
