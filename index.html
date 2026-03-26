@@ -148,6 +148,9 @@ body{font-family:'Sarabun',sans-serif;font-size:var(--app-fontsize,14px);backgro
 .card-links{display:flex;gap:8px;flex-wrap:wrap;}
 .card-footer{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--border-light);}
 .card-edit-btns{display:flex;gap:6px;}
+.dashboard-shell{padding:24px;max-width:1100px;}
+.dashboard-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px;}
+.dashboard-duo{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
 
 /* TILE VIEW */
 .tiles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;padding:16px 20px;}
@@ -294,6 +297,49 @@ body{font-family:'Sarabun',sans-serif;font-size:var(--app-fontsize,14px);backgro
 .sds-offline{background:#15803D;color:#fff;}
 .sds-offline:hover{background:#166534;}
 .pdf-size-warn{font-size:10px;color:#92400E;background:#FEF3C7;border:1px solid #FDE68A;border-radius:4px;padding:3px 7px;}
+
+@media (max-width: 900px){
+  :root{--sidebar-w:72px;}
+  .sidebar{width:var(--sidebar-w);}
+  .sidebar-brand{height:60px;padding:0 10px;justify-content:center;}
+  .sidebar-brand-text,.sidebar-section-label,.sidebar-user-info,.sidebar-toggle{display:none;}
+  .nav-item{justify-content:center;padding:10px;margin:0 6px;}
+  .nav-item-text{display:none;}
+  .sidebar-footer{padding:10px 6px;}
+  .sidebar-user{justify-content:center;}
+  .app-wrapper{margin-left:var(--sidebar-w);}
+  .app-header{height:auto;padding:12px 16px;align-items:flex-start;flex-wrap:wrap;}
+  .header-title{font-size:16px;line-height:1.2;min-width:0;}
+  .header-actions{width:100%;flex-wrap:wrap;gap:8px;}
+  .btn-export,.btn-add,.btn-edit{padding:9px 12px;}
+  .stats-bar{padding:12px 16px;}
+  .stat-card{flex:1 1 calc(50% - 10px);min-width:140px;}
+  .action-bar{position:static;padding:12px 16px;flex-wrap:wrap;}
+  .search-box{min-width:0;max-width:none;width:100%;}
+  .action-bar-right{margin-left:0;width:100%;flex-wrap:wrap;gap:10px;}
+  .count-text{width:100%;}
+  .cards-grid,.tiles-grid{grid-template-columns:1fr;padding:16px;}
+  .tile-bottom,.card-footer{gap:10px;flex-wrap:wrap;align-items:flex-start;}
+  .list-wrap{padding:0 16px 16px;}
+  .modal{width:calc(100vw - 24px);padding:18px;border-radius:16px;}
+  .field-row,.modal-actions,.theme-tiles{grid-template-columns:1fr;display:grid;}
+  .modal-actions{gap:8px;}
+  .settings-panel{width:min(100vw,380px);}
+  .dashboard-shell{padding:16px;}
+  .dashboard-kpis,.dashboard-duo{grid-template-columns:1fr;}
+}
+
+@media (max-width: 560px){
+  :root{--sidebar-w:64px;}
+  .header-logo{display:none;}
+  .header-title{font-size:15px;}
+  .header-actions > *{flex:1 1 auto;}
+  .btn-icon{flex:0 0 40px;}
+  .stat-card{min-width:0;flex:1 1 100%;}
+  .sort-btn,.btn-export,.btn-add,.btn-edit{font-size:11px;}
+  .card-links,.tile-links{gap:6px;}
+  .sds-link{font-size:9px;padding:3px 7px;}
+}
 </style>
 </head>
 <body>
@@ -1045,12 +1091,12 @@ function renderDashboard(){
   }[s]||'background:#F3F4F6;color:#6B7280;');
 
   return`
-  <div style="padding:24px;max-width:1100px;">
+  <div class="dashboard-shell">
     <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">SDS Vault Overview</h2>
     <p style="font-size:12px;color:var(--text-muted);margin-bottom:20px;">A quick pulse on coverage, upcoming reviews, and record health.</p>
 
     <!-- KPI CARDS -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px;">
+    <div class="dashboard-kpis">
       ${kpi('??','Total Records',total,'var(--text-primary)','setPage(\'all\');setFilter(\'all\',null)')}
       ${kpi('??','Flammable',flam,'#ff7a5c','setPage(\'flammable\');setFilter(\'flammable\',null)')}
       ${kpi('?','Non-Flammable',nflam,'#4ddc9a','setPage(\'nonflammable\');setFilter(\'nonflammable\',null)')}
@@ -1060,7 +1106,7 @@ function renderDashboard(){
     </div>
 
     <!-- TWO COLUMN: Category + SDS Link Coverage -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+    <div class="dashboard-duo">
 
       <!-- CATEGORY BREAKDOWN -->
       <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px;">
@@ -1089,7 +1135,7 @@ function renderDashboard(){
     </div>
 
     <!-- OVERDUE + SOON DUE -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div class="dashboard-duo" style="margin-bottom:0;">
 
       <!-- OVERDUE -->
       <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px;">
